@@ -65,7 +65,7 @@ def build_url(window: Window) -> str:
 
 
 def fetch(window: Window, *, opener=urlopen, sleep=time.sleep) -> bytes:
-    """Retry transient failures at most three times; never retry ordinary 4xx errors."""
+    """Make at most three attempts; never retry ordinary 4xx errors."""
     request = Request(
         build_url(window),
         headers={"Accept": "application/json", "User-Agent": "spain-electricity-pipeline/0.1"},
