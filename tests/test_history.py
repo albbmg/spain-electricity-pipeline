@@ -1,6 +1,7 @@
 """Historical comparisons over explicitly synthetic complete calendar years."""
 
 import json
+import re
 import shutil
 from datetime import date, datetime, time
 from decimal import Decimal
@@ -105,10 +106,17 @@ def test_invalid_year_ranges_fail(database, start, end):
 
 
 def test_report_matches_calendar_month_and_excludes_unselected_evidence(database):
+    # Regression: digits in a valid timestamp are not an observation year.
+    database.execute("UPDATE ingestion_runs SET retrieved_at = '2026-01-02T00:00:00.632023+00:00'")
     report = history.render(database, 2024, 2025)
     assert "**731 days**" in report
     assert "**1,462 technology observations**" in report
-    assert "2023" not in report
+    reported_windows = re.findall(
+        r"^- Window: (\d{4}-\d{2}-\d{2})–(\d{4}-\d{2}-\d{2})$", report, re.MULTILINE
+    )
+    expected_windows = monthly_windows(date(2024, 1, 1), date(2025, 12, 31))
+    assert reported_windows == [(str(w.start), str(w.end)) for w in expected_windows]
+    assert "2026-01-02T00:00:00.632023+00:00" in report
     # February volume YoY differs from daily-average YoY because 2024 is a leap year.
     assert "| 2025-02 | 28 | 56.000 | 2.000 | 10.00% | +93.10% | +100.00% | +0.00 |" in report
     assert "| 2024-02 | 29 | 29.000 | 1.000 | 10.00% | — | — | — |" in report
