@@ -82,6 +82,37 @@ request. A failed run does not refresh the export set: fix the error and rerun
 before using earlier CSVs. The CSVs can be imported into Power BI; a finished
 Power BI report is a later milestone, not part of this version.
 
+## Rebuild from an archive without the API
+
+Keep each original `*.manifest.json` beside its SHA-256-named JSON payload. Replace
+`RETRIEVAL_ID` below with the name of an existing manifest:
+
+```bash
+python -m electricity_pipeline --replay-manifest data/raw/RETRIEVAL_ID.manifest.json --database data/replayed.duckdb --export-dir data/replayed-exports
+```
+
+The command reads one archived window, verifies the manifest and payload checksum,
+applies the normal source-validation rules and loads the reporting model without
+an API request. It does not write to the archive. Run it once per manifest to rebuild
+several windows; `--start` and `--end` cannot be combined with replay mode, and
+`--raw-dir` is only used by live acquisition.
+
+The original retrieval ID, URL, checksum and `retrieved_at` remain unchanged.
+`replay_runs` records a separate UTC `replayed_at` for each successful replay,
+including repeat executions. Replaying the same manifest does not duplicate
+analytical rows or invent a new source download. Conflicting metadata for an
+existing retrieval ID fail and roll back the window replacement.
+
+Use a separate database as above to reconstruct an older snapshot: replay into an
+existing database **replaces its overlapping dates**, even if that database contains
+newer source revisions. Other windows are retained. The checksum detects changes
+to a payload relative to its manifest; it does not authenticate a manifest that has
+also been edited. Keep both files from a trusted original acquisition.
+
+The three original Q1 2025 manifests were replayed on 2026-10-06 without API access.
+All **990 observations**, source totals, retrieval metadata and reporting views
+matched the original warehouse; all three CSV exports matched byte for byte.
+
 ## Data quality and tests
 
 ```bash
@@ -94,6 +125,8 @@ The tests use **explicitly synthetic source examples** and real temporary DuckDB
 databases. They require no network access. They cover duplicate and missing
 observations, DST, invalid numbers, bounded retries, total reconciliation,
 transaction rollback, repeat loads, revised partitions and weighted percentages.
+The current suite contains **68 passing tests**, including offline replay, manifest
+integrity, timestamp preservation and compatibility with existing warehouses.
 
 The real-data baseline is a separate executed check, not a synthetic test result.
 The included GitHub Actions workflow runs linting and tests on Python 3.12 and
@@ -105,6 +138,8 @@ publication.
 - `generation`: daily technology observations, with source ID and retrieval lineage.
 - `source_totals`: provider totals kept separately as reconciliation controls.
 - `ingestion_runs`: request, checksum, timestamps and observation counts.
+- `replay_runs`: successful offline executions linked to their original retrieval;
+  the table is added automatically when opening an older warehouse.
 - `daily_mix`, `monthly_mix`, `monthly_technology`: reporting views defined in
   [versioned SQL](src/electricity_pipeline/sql/).
 

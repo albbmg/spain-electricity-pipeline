@@ -1,6 +1,8 @@
 """Transactional date-window replacement and versioned analytical SQL."""
 
 import csv
+import uuid
+from datetime import UTC, datetime
 from importlib.resources import files
 from pathlib import Path
 
@@ -31,7 +33,13 @@ def quality(connection: duckdb.DuckDBPyConnection) -> list[tuple[str, int]]:
     return results
 
 
-def load(connection: duckdb.DuckDBPyConnection, batch: Batch, retrieval: Retrieval) -> None:
+def load(
+    connection: duckdb.DuckDBPyConnection,
+    batch: Batch,
+    retrieval: Retrieval,
+    *,
+    replay: bool = False,
+) -> None:
     """Replace a validated partition; any write or quality failure rolls it back."""
     if (retrieval.start_date, retrieval.end_date, retrieval.region) != (
         str(batch.window.start),
@@ -48,21 +56,32 @@ def load(connection: duckdb.DuckDBPyConnection, batch: Batch, retrieval: Retriev
         connection.execute(
             "DELETE FROM source_totals WHERE region = ? AND day BETWEEN ? AND ?", bounds
         )
-        connection.execute(
-            "INSERT INTO ingestion_runs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [
-                retrieval.retrieval_id,
-                retrieval.url,
-                REGION,
-                batch.window.start,
-                batch.window.end,
-                retrieval.retrieved_at,
-                batch.source_updated_at,
-                retrieval.sha256,
-                retrieval.raw_file,
-                len(batch.observations),
-            ],
-        )
+        retrieval_values = [
+            retrieval.retrieval_id,
+            retrieval.url,
+            REGION,
+            batch.window.start,
+            batch.window.end,
+            retrieval.retrieved_at,
+            batch.source_updated_at,
+            retrieval.sha256,
+            retrieval.raw_file,
+            len(batch.observations),
+        ]
+        insert = "INSERT INTO ingestion_runs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        if replay:
+            connection.execute(insert + " ON CONFLICT DO NOTHING", retrieval_values)
+            matches = connection.execute(
+                "SELECT source_url = ? AND region = ? AND start_date = ? AND end_date = ? "
+                "AND retrieved_at = ? AND source_updated_at = ? AND sha256 = ? "
+                "AND raw_file = ? AND observation_count = ? "
+                "FROM ingestion_runs WHERE retrieval_id = ?",
+                retrieval_values[1:] + retrieval_values[:1],
+            ).fetchone()
+            if matches != (True,):
+                raise ValueError("Replay metadata conflicts with the recorded retrieval")
+        else:
+            connection.execute(insert, retrieval_values)
         connection.executemany(
             "INSERT INTO generation VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
@@ -85,6 +104,11 @@ def load(connection: duckdb.DuckDBPyConnection, batch: Batch, retrieval: Retriev
             [(REGION, day, energy, retrieval.retrieval_id) for day, energy in batch.totals.items()],
         )
         quality(connection)
+        if replay:
+            connection.execute(
+                "INSERT INTO replay_runs VALUES (?, ?, ?)",
+                [uuid.uuid4().hex, retrieval.retrieval_id, datetime.now(UTC)],
+            )
         connection.execute("COMMIT")
     except Exception:
         connection.execute("ROLLBACK")

@@ -11,6 +11,13 @@ CREATE TABLE IF NOT EXISTS ingestion_runs (
     observation_count INTEGER NOT NULL CHECK (observation_count > 0)
 );
 
+-- Additive: older warehouses keep their original schema and retrieval timestamps.
+CREATE TABLE IF NOT EXISTS replay_runs (
+    replay_id VARCHAR PRIMARY KEY,
+    retrieval_id VARCHAR NOT NULL REFERENCES ingestion_runs(retrieval_id),
+    replayed_at TIMESTAMPTZ NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS generation (
     region VARCHAR NOT NULL CHECK (region = 'peninsular'),
     day DATE NOT NULL,

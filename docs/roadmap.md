@@ -8,7 +8,7 @@ and verification; a plan or specification is not an implemented feature.
    completeness checks, total reconciliation and tests with explicitly synthetic data.
 - [x] **Analytical storage** — transactional window replacement, SQL marts, weighted
    renewable share, CSV exports and a verified real-data baseline.
-- [ ] **Offline replay** — rebuild from a recorded manifest, validating its checksum and
+- [x] **Offline replay** — rebuild from a recorded manifest, validating its checksum and
    keeping replay time distinct from original retrieval time.
 - [ ] **Revision tracking** — compare repeat loads, quantify added/changed/removed rows
    and provide a useful audit summary.

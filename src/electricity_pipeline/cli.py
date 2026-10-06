@@ -9,6 +9,7 @@ from urllib.error import URLError
 
 import duckdb
 
+from electricity_pipeline.replay import read_manifest
 from electricity_pipeline.source import archive, fetch, monthly_windows
 from electricity_pipeline.validation import MADRID, parse
 from electricity_pipeline.warehouse import connect, export_csv, load, quality
@@ -16,23 +17,37 @@ from electricity_pipeline.warehouse import connect, export_csv, load, quality
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--start", type=date.fromisoformat, help="YYYY-MM-DD inclusive (live mode)")
+    parser.add_argument("--end", type=date.fromisoformat, help="YYYY-MM-DD inclusive (live mode)")
     parser.add_argument(
-        "--start", required=True, type=date.fromisoformat, help="YYYY-MM-DD inclusive"
-    )
-    parser.add_argument(
-        "--end", required=True, type=date.fromisoformat, help="YYYY-MM-DD inclusive"
+        "--replay-manifest", type=Path, help="Replay one archived retrieval offline"
     )
     parser.add_argument("--database", type=Path, default=Path("data/electricity.duckdb"))
     parser.add_argument("--raw-dir", type=Path, default=Path("data/raw"))
     parser.add_argument("--export-dir", type=Path, default=Path("data/exports"))
     args = parser.parse_args(argv)
-    if args.end >= datetime.now(MADRID).date():
-        parser.error("Use closed historical dates; today and future dates are not supported")
-    if args.start > args.end:
-        parser.error("--start must be on or before --end")
+    if args.replay_manifest is not None:
+        if args.start is not None or args.end is not None:
+            parser.error("--replay-manifest cannot be combined with --start or --end")
+    else:
+        if args.start is None or args.end is None:
+            parser.error("Provide both --start and --end, or use --replay-manifest")
+        if args.end >= datetime.now(MADRID).date():
+            parser.error("Use closed historical dates; today and future dates are not supported")
+        if args.start > args.end:
+            parser.error("--start must be on or before --end")
     try:
+        # Validate the archive before creating or opening the target warehouse.
+        archived = read_manifest(args.replay_manifest) if args.replay_manifest is not None else None
+        windows = [] if archived is not None else monthly_windows(args.start, args.end)
         with connect(args.database) as connection:
-            for window in monthly_windows(args.start, args.end):
+            if archived is not None:
+                batch, retrieval = archived
+                load(connection, batch, retrieval, replay=True)
+                print(
+                    f"Replayed {len(batch.observations)} observations from {retrieval.retrieval_id}"
+                )
+            for window in windows:
                 print(f"Fetching {window.start} through {window.end} (peninsular)", flush=True)
                 body = fetch(window)
                 retrieval = archive(body, window, args.raw_dir)

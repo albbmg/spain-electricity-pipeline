@@ -70,3 +70,27 @@ the contract validates the series and total actually returned for each window.
 
 The informational-use attribution conditions are separate from the code license.
 Source names, units and dates must remain visible in any published results.
+
+## Offline replay contract
+
+`--replay-manifest` accepts one manifest produced by this pipeline and reads its
+sibling `<sha256>.json` payload. It validates the exact retrieval fields and types,
+canonical request URL, peninsular region, within-month date window, UTC acquisition
+time, filename and SHA-256 before opening the warehouse. Duplicate JSON keys,
+missing payloads, symbolic-link payloads, path traversal and inconsistent metadata
+are rejected. Files are size-bounded; the payload then passes the same source-data
+validation as a live response. No network call or archive rewrite is performed.
+
+The original acquisition remains in `ingestion_runs`. A separate `replay_runs`
+record stores the actual replay time and references that acquisition. Repeated
+replays may reuse the original retrieval record only when **all recorded metadata
+agree**; conflicts fail. Replay audit insertion and analytical window replacement
+commit together, or both roll back. A fresh replay database can therefore reproduce
+the original source lineage and CSV values without representing replay as a download.
+
+Older warehouses acquire only the new audit table; no existing timestamps or
+observations are migrated or deleted during schema setup. Replay uses the same
+explicit window-replacement semantics as live loading. An older archive can replace
+a newer overlapping window, so use a separate database for historical reconstruction.
+The archive checksum checks payload integrity relative to the manifest, not source
+authenticity. Preserve the original manifest and payload together as trusted evidence.
