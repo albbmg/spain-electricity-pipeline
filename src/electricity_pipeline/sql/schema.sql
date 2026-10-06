@@ -38,3 +38,20 @@ CREATE TABLE IF NOT EXISTS source_totals (
     retrieval_id VARCHAR NOT NULL,
     PRIMARY KEY (region, day)
 );
+
+-- One comparison per successful load; history starts when this feature is installed.
+CREATE TABLE IF NOT EXISTS revision_runs (
+    revision_id VARCHAR PRIMARY KEY,
+    retrieval_id VARCHAR NOT NULL REFERENCES ingestion_runs(retrieval_id),
+    loaded_at TIMESTAMPTZ NOT NULL,
+    mode VARCHAR NOT NULL CHECK (mode IN ('live', 'replay')),
+    previous_retrieval_ids VARCHAR[] NOT NULL,
+    generation_added INTEGER NOT NULL CHECK (generation_added >= 0),
+    generation_changed INTEGER NOT NULL CHECK (generation_changed >= 0),
+    generation_removed INTEGER NOT NULL CHECK (generation_removed >= 0),
+    generation_unchanged INTEGER NOT NULL CHECK (generation_unchanged >= 0),
+    totals_added INTEGER NOT NULL CHECK (totals_added >= 0),
+    totals_changed INTEGER NOT NULL CHECK (totals_changed >= 0),
+    totals_removed INTEGER NOT NULL CHECK (totals_removed >= 0),
+    totals_unchanged INTEGER NOT NULL CHECK (totals_unchanged >= 0)
+);

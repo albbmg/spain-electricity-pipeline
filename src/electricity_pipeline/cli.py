@@ -3,6 +3,7 @@
 import argparse
 import json
 import sys
+from dataclasses import asdict
 from datetime import date, datetime
 from pathlib import Path
 from urllib.error import URLError
@@ -43,22 +44,24 @@ def main(argv: list[str] | None = None) -> int:
         with connect(args.database) as connection:
             if archived is not None:
                 batch, retrieval = archived
-                load(connection, batch, retrieval, replay=True)
+                revision = load(connection, batch, retrieval, replay=True)
                 print(
                     f"Replayed {len(batch.observations)} observations from {retrieval.retrieval_id}"
                 )
+                print(json.dumps({"revision": asdict(revision)}), flush=True)
             for window in windows:
                 print(f"Fetching {window.start} through {window.end} (peninsular)", flush=True)
                 body = fetch(window)
                 retrieval = archive(body, window, args.raw_dir)
                 batch = parse(body, window)
-                load(connection, batch, retrieval)
+                revision = load(connection, batch, retrieval)
                 print(
                     json.dumps(
                         {
                             "loaded_observations": len(batch.observations),
                             "source_sha256": retrieval.sha256,
                             "source_updated_at": batch.source_updated_at,
+                            "revision": asdict(revision),
                         }
                     ),
                     flush=True,

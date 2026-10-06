@@ -2,12 +2,14 @@
 
 import csv
 import uuid
+from dataclasses import astuple
 from datetime import UTC, datetime
 from importlib.resources import files
 from pathlib import Path
 
 import duckdb
 
+from electricity_pipeline.revisions import RevisionSummary, summarize
 from electricity_pipeline.source import REGION, Retrieval
 from electricity_pipeline.validation import Batch
 
@@ -39,7 +41,7 @@ def load(
     retrieval: Retrieval,
     *,
     replay: bool = False,
-) -> None:
+) -> RevisionSummary:
     """Replace a validated partition; any write or quality failure rolls it back."""
     if (retrieval.start_date, retrieval.end_date, retrieval.region) != (
         str(batch.window.start),
@@ -50,6 +52,7 @@ def load(
     bounds = [REGION, batch.window.start, batch.window.end]
     connection.execute("BEGIN TRANSACTION")
     try:
+        revision = summarize(connection, batch)
         connection.execute(
             "DELETE FROM generation WHERE region = ? AND day BETWEEN ? AND ?", bounds
         )
@@ -104,15 +107,29 @@ def load(
             [(REGION, day, energy, retrieval.retrieval_id) for day, energy in batch.totals.items()],
         )
         quality(connection)
+        loaded_at = datetime.now(UTC)
+        connection.execute(
+            "INSERT INTO revision_runs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                uuid.uuid4().hex,
+                retrieval.retrieval_id,
+                loaded_at,
+                "replay" if replay else "live",
+                list(revision.previous_retrieval_ids),
+                *astuple(revision.generation),
+                *astuple(revision.source_totals),
+            ],
+        )
         if replay:
             connection.execute(
                 "INSERT INTO replay_runs VALUES (?, ?, ?)",
-                [uuid.uuid4().hex, retrieval.retrieval_id, datetime.now(UTC)],
+                [uuid.uuid4().hex, retrieval.retrieval_id, loaded_at],
             )
         connection.execute("COMMIT")
     except Exception:
         connection.execute("ROLLBACK")
         raise
+    return revision
 
 
 def export_csv(connection: duckdb.DuckDBPyConnection, directory: Path) -> list[Path]:

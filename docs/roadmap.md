@@ -10,8 +10,9 @@ and verification; a plan or specification is not an implemented feature.
    renewable share, CSV exports and a verified real-data baseline.
 - [x] **Offline replay** — rebuild from a recorded manifest, validating its checksum and
    keeping replay time distinct from original retrieval time.
-- [ ] **Revision tracking** — compare repeat loads, quantify added/changed/removed rows
-   and provide a useful audit summary.
+- [x] **Revision tracking** — compare each window before replacement, record separate
+   technology/total change counts and prior retrieval IDs, and print an audit summary
+   for live and replay loads. Data and audit commit or roll back together.
 - [ ] **Historical analysis** — extend the baseline to multiple complete years; interpret
    seasonal changes and comparable periods without mixing incomplete months.
 - [ ] **Power BI** — import the exported daily and monthly tables, define measures and

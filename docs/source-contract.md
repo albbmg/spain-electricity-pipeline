@@ -88,9 +88,31 @@ agree**; conflicts fail. Replay audit insertion and analytical window replacemen
 commit together, or both roll back. A fresh replay database can therefore reproduce
 the original source lineage and CSV values without representing replay as a download.
 
-Older warehouses acquire only the new audit table; no existing timestamps or
+Older warehouses acquire the audit tables; no existing timestamps or
 observations are migrated or deleted during schema setup. Replay uses the same
 explicit window-replacement semantics as live loading. An older archive can replace
 a newer overlapping window, so use a separate database for historical reconstruction.
 The archive checksum checks payload integrity relative to the manifest, not source
 authenticity. Preserve the original manifest and payload together as trusted evidence.
+
+## Revision audit contract
+
+Every successful window load writes one `revision_runs` event inside the same
+transaction as the analytical replacement. Comparison reads the pre-load state of
+that window and region only. It records added, changed, removed and unchanged rows
+separately for generation and source totals, the incoming retrieval ID, all prior
+retrieval IDs in the window, the actual UTC load time and live/replay mode.
+
+Generation keys are `(day, technology_id)` within the peninsular region. Compared
+values are technology name, renewable flag, exact decimal MWh and stored nullable
+DOUBLE source share. Totals compare exact decimal MWh keyed by day. Changed source
+update times, retrieval IDs and hashes alone do not count as changed observations;
+their evidence remains in the original retrieval records and archives. An ID change
+counts as one removal and one addition, not as a rename of the existing key.
+
+An empty window has only additions. A fully identical repeat has only unchanged
+rows. Partial overlaps can contain both revisions and first-time additions. Counts
+refer to local warehouse transitions, including intentional older-snapshot replay;
+they do not independently prove a provider correction. Failed validation, quality
+checks or audit writes roll back the load. There is no backfill of historical audit
+events when upgrading an existing database, and no row-level version store.

@@ -125,13 +125,57 @@ The tests use **explicitly synthetic source examples** and real temporary DuckDB
 databases. They require no network access. They cover duplicate and missing
 observations, DST, invalid numbers, bounded retries, total reconciliation,
 transaction rollback, repeat loads, revised partitions and weighted percentages.
-The current suite contains **68 passing tests**, including offline replay, manifest
-integrity, timestamp preservation and compatibility with existing warehouses.
+The current suite contains **81 passing tests**, including offline replay, manifest
+integrity, timestamp preservation, revision counts, audit rollback and compatibility
+with existing warehouses.
 
 The real-data baseline is a separate executed check, not a synthetic test result.
 The included GitHub Actions workflow runs linting and tests on Python 3.12 and
 3.13 after pushes and pull requests; its remote result must be checked after
 publication.
+
+## Audit source revisions
+
+Each successful live load or offline replay prints a `revision` JSON summary and
+stores it in `revision_runs`. Counts distinguish added, changed, removed and unchanged
+rows within the requested window. Technology observations and published totals are
+counted separately. A first load into an empty window counts as additions; a repeat
+with identical values counts as unchanged, even when retrieval or publication dates differ.
+
+For technology rows, a change means a different name, renewable classification, MWh
+value or stored source percentage for the same date and technology ID. The audit
+compares the values stored in DuckDB, including nullable DOUBLE source percentages;
+MWh comparisons use exact decimals. Totals compare their MWh value by date.
+Other dates are not included in the comparison or changed by the load.
+
+Inspect recent loads with this SQL against the local warehouse:
+
+```sql
+SELECT r.loaded_at, r.mode, i.start_date, i.end_date,
+       r.generation_added, r.generation_changed, r.generation_removed,
+       r.generation_unchanged, r.totals_added, r.totals_changed,
+       r.totals_removed, r.totals_unchanged,
+       r.previous_retrieval_ids, r.retrieval_id, i.sha256
+FROM revision_runs AS r
+JOIN ingestion_runs AS i USING (retrieval_id)
+ORDER BY r.loaded_at DESC, r.revision_id;
+```
+
+Each event records its actual UTC load time, live/replay mode, incoming retrieval
+and all prior retrieval IDs found in that window. Original retrieval metadata and
+raw archives remain the source evidence. Counts describe changes to the local
+warehouse, not necessarily new provider corrections: replaying an older archive can
+also change values. This is a summary audit, not a row-level version history.
+
+Audit and data writes share one transaction: failed loads leave neither partial
+replacement data nor a successful audit event. Existing warehouses acquire the table
+automatically. Audit history begins with the next successful load; earlier events
+are not reconstructed or assigned fabricated timestamps.
+
+Verification on 2026-10-06 replayed the three original Q1 2025 archives into a copy
+of the existing warehouse: the audit recorded **990 unchanged observations** and
+**90 unchanged totals**, with no additions, changes or removals. All three analytical
+CSV exports remained byte-identical to the baseline.
 
 ## Model
 
@@ -140,6 +184,7 @@ publication.
 - `ingestion_runs`: request, checksum, timestamps and observation counts.
 - `replay_runs`: successful offline executions linked to their original retrieval;
   the table is added automatically when opening an older warehouse.
+- `revision_runs`: per-load comparison counts, execution time and previous retrieval IDs.
 - `daily_mix`, `monthly_mix`, `monthly_technology`: reporting views defined in
   [versioned SQL](src/electricity_pipeline/sql/).
 
