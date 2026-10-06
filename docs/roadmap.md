@@ -16,10 +16,12 @@ and verification; a plan or specification is not an implemented feature.
 - [ ] **Historical analysis** — extend the baseline to multiple complete years; interpret
    seasonal changes and comparable periods without mixing incomplete months.
    The report command and offline completeness/comparison tests are implemented.
-   The 2024–2025 extraction stopped at a sparse March 2024 `Fuel + Gas` series;
-   see [the observed coverage check](../reports/history-readiness-2024-2025.md).
-   Resolve that source coverage and execute the complete real-data report before
-   checking this milestone off.
+   Explicit daily request windows recovered the sparse March 2024 response with
+   unchanged validation and verified offline replay; see the
+   [recovery evidence](../reports/march-2024-daily-recovery.md).
+   Q1 2024 is validated (91 days, 1,002 observations). Load and verify the remaining
+   April 2024–December 2025 windows, investigate any further sparse responses, and
+   execute the complete real-data report before checking this milestone off.
 - [ ] **Power BI** — import the exported daily and monthly tables, define measures and
    build and actually verify a compact report. A specification is not a finished PBIX.
 

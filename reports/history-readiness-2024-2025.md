@@ -4,6 +4,11 @@ Source: **Red Eléctrica de España, REData**. Geography: **peninsular Spain**.
 
 Checked on 2026-10-06 using the production ingestion and validation path in a separate warehouse. The intended 2024–2025 baseline is **not complete**; no annual or seasonal findings are published from this partial load.
 
+**Follow-up on 2026-10-06:** explicit daily requests recovered March without imputation,
+and every reported observation and total matches the original monthly payload.
+See the [verified recovery](march-2024-daily-recovery.md). The initial monthly failure
+below is retained as diagnostic evidence; the full two-year analysis remains pending.
+
 ## Observed result
 
 - January and February 2024 passed validation: 60 days, 660 technology observations and 60 published totals.
@@ -12,7 +17,7 @@ Checked on 2026-10-06 using the production ingestion and validation path in a se
 - The existing completeness contract rejected March before loading it. The first two committed windows remain intact. Subsequent months were not requested in this run.
 - The historical report command correctly rejected the partial warehouse rather than producing annual comparisons.
 
-## Next step
+## Investigation proposed after the initial failure
 
 Investigate the provider’s sparse-series semantics or retrieve the affected dates at a narrower request grain and validate the returned observations. Do not fill missing measurements with zero, drop the technology, or weaken reconciliation solely to obtain a report. Complete and validate all requested calendar dates before marking historical analysis finished.
 

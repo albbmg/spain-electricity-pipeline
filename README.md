@@ -71,11 +71,30 @@ manifests under `data/raw/`, and these UTF-8 CSVs under `data/exports/`:
 | `monthly_mix.csv` | System × month | Energy-weighted monthly shares and explicit completeness |
 | `monthly_technology.csv` | System × month × technology attributes | Contribution by generation technology |
 
-Date limits are inclusive. Larger ranges are split into monthly requests. Today
+Date limits are inclusive. Larger ranges are split into monthly requests by default. Today
 and future dates are rejected. To update an existing range, run the same command
 again against the same database. Each window is an independent transaction; a
 failed later window leaves earlier valid windows intact. Only one writer should
 use a database at a time.
+
+For a source window that needs investigation at a narrower request size, opt into
+one API request per day:
+
+```bash
+python -m electricity_pipeline --start 2024-03-01 --end 2024-03-31 --request-window day --database data/march-daily.duckdb --raw-dir data/march-raw --export-dir data/march-exports
+```
+
+`--request-window month` is the default; `day` changes the request boundaries, not
+the daily measurement grain or validation rules. Daily mode makes one request per
+selected date, each with its own archive, transaction and revision audit. It is
+explicit, with no automatic fallback or extra requests after a monthly failure.
+Replay follows the archived window and rejects `--request-window`.
+
+Daily queries can return different technology sets. Store only what each response
+actually supplies: an absent series is not an observed zero, and no rows are invented
+to fill a technology calendar. Returned series must still cover their request and
+reconcile with the published total. `monthly_technology.days_observed` makes sparse
+technology coverage visible. Use `daily_mix`/`monthly_mix` for system-wide totals.
 
 Exports represent **all loaded dates in the database**, not just the most recent
 request. A failed run does not refresh the export set: fix the error and rerun
@@ -125,7 +144,7 @@ The tests use **explicitly synthetic source examples** and real temporary DuckDB
 databases. They require no network access. They cover duplicate and missing
 observations, DST, invalid numbers, bounded retries, total reconciliation,
 transaction rollback, repeat loads, revised partitions and weighted percentages.
-The current suite contains **94 passing tests**, including offline replay, manifest
+The current suite contains **104 passing tests**, including offline replay, manifest
 integrity, timestamp preservation, revision counts, audit rollback and compatibility
 with existing warehouses. Historical-report tests also cover leap years, weighted
 shares, matching calendar months, selected-period lineage and rejection of gaps.
@@ -151,11 +170,15 @@ and daily averages, so leap-year differences remain visible. Only the selected y
 and their currently referenced source evidence appear in the report.
 
 **Real-data status:** the attempted 2024–2025 extraction on 2026-10-06 stopped at
-March 2024 because the source returned an incomplete `Fuel + Gas` series. January
-and February passed; subsequent months were not requested. The report correctly
-refuses this partial warehouse. See the [coverage check and retrieval evidence](reports/history-readiness-2024-2025.md).
-The command is implemented and tested with explicitly synthetic complete years;
-the multi-year real-data analysis remains pending until coverage is resolved.
+March 2024 because the monthly response returned a sparse `Fuel + Gas` series.
+Explicit daily requests subsequently recovered **31 days and 342 observations**;
+all reported measurements and totals match the original monthly payload, without
+imputation. Offline replay reproduces all three CSVs byte for byte. Together with
+January–February, **Q1 2024 now has 91 validated days and 1,002 observations**.
+See the [initial coverage check](reports/history-readiness-2024-2025.md) and the
+[daily recovery with source evidence](reports/march-2024-daily-recovery.md).
+The remaining 21 months are pending. The historical report correctly refuses this
+partial two-year warehouse; the multi-year analysis is not yet complete.
 
 ## Audit source revisions
 

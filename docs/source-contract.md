@@ -15,8 +15,11 @@
 
 All three geography parameters are supplied: the API's default geography varies
 between widgets. This dataset must not be described as the whole of Spain.
-Requests are split at calendar-month boundaries to bound response size and allow
-small, repeatable loads. No account or API key is required for this endpoint.
+Requests are split at calendar-month boundaries by default to bound response size
+and allow small, repeatable loads. Explicit `--request-window day` instead requests
+one local date at a time; `time_trunc=day` and all geography parameters stay the same.
+Daily mode makes more requests and is never an automatic fallback for a failed
+monthly response. No account or API key is required for this endpoint.
 
 ## Grain and types
 
@@ -52,7 +55,7 @@ publication timestamp, not the observation date or a definitive/provisional flag
 A successful load replaces only its validated date window in one transaction. An
 unchanged reload preserves the same analytical rows; a revised response replaces
 old values and removes obsolete rows in that window. Other dates are preserved.
-Multiple monthly requests commit independently: earlier valid windows remain if a
+Multiple requests commit independently: earlier valid windows remain if a
 later request fails. The command exits unsuccessfully and can be rerun.
 
 Recent or historical publication revisions are possible. Reconciliation validates
@@ -70,6 +73,21 @@ the contract validates the series and total actually returned for each window.
 
 The informational-use attribution conditions are separate from the code license.
 Source names, units and dates must remain visible in any published results.
+
+## Explicit daily request windows
+
+Daily acquisition preserves the same source contract on a one-day window. A
+technology returned with no observation still fails. A technology absent from the
+entire daily response remains absent: it is not assigned zero or a fabricated row.
+Technology sets may therefore vary by day. `monthly_technology.days_observed` counts
+only actual observations; it must not be read as complete coverage of every technology.
+Daily system totals still require a valid published total and reconciled technology sum.
+
+Each response keeps its own URL, checksum, acquisition timestamp and source-update
+metadata. Replay of a single-day manifest uses the normal offline path. The live-only
+request-window option is rejected in replay mode because the archive already fixes
+the boundaries. Earlier successful days survive a later failure, while exports are
+not refreshed by a failed run. Retry bounds remain three attempts per request.
 
 ## Offline replay contract
 
@@ -136,4 +154,9 @@ establish causes or a long-term seasonal pattern. Source totals remain separate.
 The attempted 2024–2025 live acquisition on 2026-10-06 encountered a partial source
 series in March 2024 and stopped under the existing ingestion contract. Missing
 technology values must not be imputed or discarded to make that history pass. The
-diagnostic report records this unresolved coverage; it is not an annual analysis.
+initial diagnostic report records that monthly response; it is not an annual analysis.
+Follow-up explicit daily requests recovered all 31 March days under these unchanged
+validation rules. Every reported technology observation and total matches the
+original monthly payload, including the one `Fuel + Gas` observation. See the
+[verified recovery](../reports/march-2024-daily-recovery.md). This resolves March
+acquisition, not the still-incomplete two-year historical analysis.

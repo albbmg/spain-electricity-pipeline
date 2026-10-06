@@ -47,6 +47,11 @@ def monthly_windows(start: date, end: date) -> list[Window]:
     return windows
 
 
+def daily_windows(start: date, end: date) -> list[Window]:
+    """Partition an inclusive range into explicit single-day requests."""
+    return [Window(day, day) for day in sorted(Window(start, end).dates)]
+
+
 def build_url(window: Window) -> str:
     return (
         ENDPOINT

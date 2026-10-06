@@ -11,7 +11,7 @@ from urllib.error import URLError
 import duckdb
 
 from electricity_pipeline.replay import read_manifest
-from electricity_pipeline.source import archive, fetch, monthly_windows
+from electricity_pipeline.source import archive, daily_windows, fetch, monthly_windows
 from electricity_pipeline.validation import MADRID, parse
 from electricity_pipeline.warehouse import connect, export_csv, load, quality
 
@@ -21,6 +21,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--start", type=date.fromisoformat, help="YYYY-MM-DD inclusive (live mode)")
     parser.add_argument("--end", type=date.fromisoformat, help="YYYY-MM-DD inclusive (live mode)")
     parser.add_argument(
+        "--request-window",
+        choices=("month", "day"),
+        help="Live request size: month (default) or one request per day; data stay daily",
+    )
+    parser.add_argument(
         "--replay-manifest", type=Path, help="Replay one archived retrieval offline"
     )
     parser.add_argument("--database", type=Path, default=Path("data/electricity.duckdb"))
@@ -28,6 +33,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--export-dir", type=Path, default=Path("data/exports"))
     args = parser.parse_args(argv)
     if args.replay_manifest is not None:
+        if args.request_window is not None:
+            parser.error("--request-window is only available for live acquisition")
         if args.start is not None or args.end is not None:
             parser.error("--replay-manifest cannot be combined with --start or --end")
     else:
@@ -40,7 +47,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         # Validate the archive before creating or opening the target warehouse.
         archived = read_manifest(args.replay_manifest) if args.replay_manifest is not None else None
-        windows = [] if archived is not None else monthly_windows(args.start, args.end)
+        partition = daily_windows if args.request_window == "day" else monthly_windows
+        windows = [] if archived is not None else partition(args.start, args.end)
         with connect(args.database) as connection:
             if archived is not None:
                 batch, retrieval = archived
