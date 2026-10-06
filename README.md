@@ -125,14 +125,37 @@ The tests use **explicitly synthetic source examples** and real temporary DuckDB
 databases. They require no network access. They cover duplicate and missing
 observations, DST, invalid numbers, bounded retries, total reconciliation,
 transaction rollback, repeat loads, revised partitions and weighted percentages.
-The current suite contains **81 passing tests**, including offline replay, manifest
+The current suite contains **94 passing tests**, including offline replay, manifest
 integrity, timestamp preservation, revision counts, audit rollback and compatibility
-with existing warehouses.
+with existing warehouses. Historical-report tests also cover leap years, weighted
+shares, matching calendar months, selected-period lineage and rejection of gaps.
 
 The real-data baseline is a separate executed check, not a synthetic test result.
 The included GitHub Actions workflow runs linting and tests on Python 3.12 and
 3.13 after pushes and pull requests; its remote result must be checked after
 publication.
+
+## Historical comparisons
+
+The historical report command reads an existing warehouse without changing it:
+
+```bash
+python -m electricity_pipeline.history --database data/history.duckdb --start-year 2024 --end-year 2025
+```
+
+It requires at least two complete past calendar years, checks every selected date,
+and produces annual, calendar-quarter and monthly summaries in Markdown. Monthly
+YoY comparisons use the same calendar month of the preceding year. Energy-weighted
+renewable shares and percentage-point changes are shown alongside generation totals
+and daily averages, so leap-year differences remain visible. Only the selected years
+and their currently referenced source evidence appear in the report.
+
+**Real-data status:** the attempted 2024–2025 extraction on 2026-10-06 stopped at
+March 2024 because the source returned an incomplete `Fuel + Gas` series. January
+and February passed; subsequent months were not requested. The report correctly
+refuses this partial warehouse. See the [coverage check and retrieval evidence](reports/history-readiness-2024-2025.md).
+The command is implemented and tested with explicitly synthetic complete years;
+the multi-year real-data analysis remains pending until coverage is resolved.
 
 ## Audit source revisions
 

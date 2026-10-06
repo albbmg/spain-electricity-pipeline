@@ -116,3 +116,24 @@ refer to local warehouse transitions, including intentional older-snapshot repla
 they do not independently prove a provider correction. Failed validation, quality
 checks or audit writes roll back the load. There is no backfill of historical audit
 events when upgrading an existing database, and no row-level version store.
+
+## Historical comparison contract
+
+The history command selects an explicit inclusive range of at least two past
+calendar years. It opens the warehouse read-only, runs the existing quality checks,
+then requires every selected month and day to be present. A missing whole month,
+whole year or leap day fails before any report is printed. Additional years in the
+warehouse are excluded from the selected results and retrieval evidence.
+
+Versioned SQL aggregates daily energy into years, calendar quarters and months.
+Renewable shares are sums of renewable MWh divided by sums of total generation MWh.
+YoY compares the same calendar period one year earlier; share changes are percentage
+points. Daily averages divide each period's generation by its observed calendar days,
+exposing leap-year length differences without claiming weather-adjusted comparisons.
+Extrema refer only to observed complete months in each selected year; they do not
+establish causes or a long-term seasonal pattern. Source totals remain separate.
+
+The attempted 2024–2025 live acquisition on 2026-10-06 encountered a partial source
+series in March 2024 and stopped under the existing ingestion contract. Missing
+technology values must not be imputed or discarded to make that history pass. The
+diagnostic report records this unresolved coverage; it is not an annual analysis.
