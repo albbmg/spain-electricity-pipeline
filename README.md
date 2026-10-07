@@ -169,16 +169,23 @@ renewable shares and percentage-point changes are shown alongside generation tot
 and daily averages, so leap-year differences remain visible. Only the selected years
 and their currently referenced source evidence appear in the report.
 
-**Real-data status:** the attempted 2024–2025 extraction on 2026-10-06 stopped at
-March 2024 because the monthly response returned a sparse `Fuel + Gas` series.
-Explicit daily requests subsequently recovered **31 days and 342 observations**;
-all reported measurements and totals match the original monthly payload, without
-imputation. Offline replay reproduces all three CSVs byte for byte. Together with
-January–February, **Q1 2024 now has 91 validated days and 1,002 observations**.
-See the [initial coverage check](reports/history-readiness-2024-2025.md) and the
-[daily recovery with source evidence](reports/march-2024-daily-recovery.md).
-The remaining 21 months are pending. The historical report correctly refuses this
-partial two-year warehouse; the multi-year analysis is not yet complete.
+**Real-data status:** on 2026-10-07, the validated historical warehouse covers
+**H1 2024: 182 days, six complete months and 2,004 technology observations**.
+Q2 generation was **6.70% lower** than Q1, while the energy-weighted renewable
+share rose **3.78 percentage points**. Both quarters contain 91 days; these are
+within-year comparisons, not evidence of recurring seasonality.
+
+April and May passed monthly validation. Explicit daily requests recovered June's
+sparse `Fuel + Gas` series, preserving every reported measurement and published
+total from the monthly response without imputation. All 65 active source manifests
+were replayed offline with checksum verification; source tables and all three CSV
+exports matched exactly. See the [H1 analysis and source evidence](reports/baseline-2024-h1.md),
+the [initial coverage check](reports/history-readiness-2024-2025.md) and the
+[March recovery](reports/march-2024-daily-recovery.md).
+
+The remaining **18 months (July 2024–December 2025)** are pending. The historical
+report correctly refuses this partial two-year warehouse; the multi-year analysis
+is not yet complete.
 
 ## Audit source revisions
 
