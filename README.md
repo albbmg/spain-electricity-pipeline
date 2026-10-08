@@ -169,23 +169,24 @@ renewable shares and percentage-point changes are shown alongside generation tot
 and daily averages, so leap-year differences remain visible. Only the selected years
 and their currently referenced source evidence appear in the report.
 
-**Real-data status:** on 2026-10-07, the validated historical warehouse covers
-**H1 2024: 182 days, six complete months and 2,004 technology observations**.
-Q2 generation was **6.70% lower** than Q1, while the energy-weighted renewable
-share rose **3.78 percentage points**. Both quarters contain 91 days; these are
+**Real-data status:** on 2026-10-08, the validated historical warehouse covers
+**Q1–Q3 2024: 274 days, nine complete months and 3,018 technology observations**.
+Q3 generation was **8.55% higher** than Q2 (**7.37% per day**), while the
+energy-weighted renewable share was **9.43 percentage points lower**. These are
 within-year comparisons, not evidence of recurring seasonality.
 
-April and May passed monthly validation. Explicit daily requests recovered June's
-sparse `Fuel + Gas` series, preserving every reported measurement and published
-total from the monthly response without imputation. All 65 active source manifests
-were replayed offline with checksum verification; source tables and all three CSV
-exports matched exactly. See the [H1 analysis and source evidence](reports/baseline-2024-h1.md),
-the [initial coverage check](reports/history-readiness-2024-2025.md) and the
+July passed monthly validation. Explicit daily requests recovered the sparse
+`Fuel + Gas` series in August and September, preserving every reported
+measurement and published total from the monthly responses without imputation.
+All 127 active source manifests were replayed offline with checksum verification;
+source tables and all three CSV exports matched exactly. See the
+[Q1–Q3 analysis and source evidence](reports/baseline-2024-q1-q3.md), the
+[H1 analysis](reports/baseline-2024-h1.md) and the
 [March recovery](reports/march-2024-daily-recovery.md).
 
-The remaining **18 months (July 2024–December 2025)** are pending. The historical
-report correctly refuses this partial two-year warehouse; the multi-year analysis
-is not yet complete.
+The remaining **15 months (October 2024–December 2025)** are pending. The
+historical report correctly refuses this partial two-year warehouse; the
+multi-year analysis is not yet complete.
 
 ## Audit source revisions
 
