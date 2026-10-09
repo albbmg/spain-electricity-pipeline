@@ -19,13 +19,13 @@ and verification; a plan or specification is not an implemented feature.
    Explicit daily request windows recovered the sparse March 2024 response with
    unchanged validation and verified offline replay; see the
    [recovery evidence](../reports/march-2024-daily-recovery.md).
-   [Q1–Q3 2024 is validated](../reports/baseline-2024-q1-q3.md): 274 days,
-   nine complete months and 3,018 observations, with energy-weighted quarterly
-   comparisons. August and September daily recovery matches the monthly source;
-   all 127 active manifests reproduce the warehouse and CSVs offline. Load and
-   verify the remaining October 2024–December 2025 windows, investigate any
-   further sparse responses, and
-   execute the complete real-data report before checking this milestone off.
+   [The complete 2024 calendar year is validated](../reports/baseline-2024-full-year.md):
+   366 days, 12 complete months and 4,030 observations, with quarterly and
+   monthly comparisons. All 130 active manifests reproduce the warehouse and
+   CSVs offline. Replay the separately validated Q1 2025 baseline into the
+   historical warehouse, acquire and verify April–December 2025, investigate
+   any sparse responses, and execute the complete two-year report before
+   checking this milestone off.
 - [ ] **Power BI** — import the exported daily and monthly tables, define measures and
    build and actually verify a compact report. A specification is not a finished PBIX.
 

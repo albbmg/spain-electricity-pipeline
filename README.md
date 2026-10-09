@@ -169,24 +169,23 @@ renewable shares and percentage-point changes are shown alongside generation tot
 and daily averages, so leap-year differences remain visible. Only the selected years
 and their currently referenced source evidence appear in the report.
 
-**Real-data status:** on 2026-10-08, the validated historical warehouse covers
-**Q1–Q3 2024: 274 days, nine complete months and 3,018 technology observations**.
-Q3 generation was **8.55% higher** than Q2 (**7.37% per day**), while the
-energy-weighted renewable share was **9.43 percentage points lower**. These are
-within-year comparisons, not evidence of recurring seasonality.
+**Real-data status:** on 2026-10-09, the validated historical warehouse covers
+the complete leap year **2024: 366 days, 12 complete months and 4,030 technology
+observations**. It contains **248,642.883 GWh** of generation, with a
+provider-classified renewable share of **58.96%**.
 
-July passed monthly validation. Explicit daily requests recovered the sparse
-`Fuel + Gas` series in August and September, preserving every reported
-measurement and published total from the monthly responses without imputation.
-All 127 active source manifests were replayed offline with checksum verification;
-source tables and all three CSV exports matched exactly. See the
-[Q1–Q3 analysis and source evidence](reports/baseline-2024-q1-q3.md), the
-[H1 analysis](reports/baseline-2024-h1.md) and the
+Q4 passed monthly validation directly. Its generation was **5.60% lower** than
+Q3, while its energy-weighted renewable share was **2.36 percentage points
+lower**. All 130 active source manifests were replayed offline with checksum
+verification; source tables and all three CSV exports matched exactly. See the
+[full-year analysis and source evidence](reports/baseline-2024-full-year.md),
+the [Q1–Q3 analysis](reports/baseline-2024-q1-q3.md) and the
 [March recovery](reports/march-2024-daily-recovery.md).
 
-The remaining **15 months (October 2024–December 2025)** are pending. The
-historical report correctly refuses this partial two-year warehouse; the
-multi-year analysis is not yet complete.
+The validated Q1 2025 baseline exists separately, but the historical warehouse
+still needs the complete 2025 calendar year. The historical report correctly
+refuses this incomplete two-year selection; the multi-year analysis is not yet
+complete.
 
 ## Audit source revisions
 
