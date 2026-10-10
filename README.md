@@ -169,23 +169,22 @@ renewable shares and percentage-point changes are shown alongside generation tot
 and daily averages, so leap-year differences remain visible. Only the selected years
 and their currently referenced source evidence appear in the report.
 
-**Real-data status:** on 2026-10-09, the validated historical warehouse covers
-the complete leap year **2024: 366 days, 12 complete months and 4,030 technology
-observations**. It contains **248,642.883 GWh** of generation, with a
-provider-classified renewable share of **58.96%**.
+**Real-data status:** on 2026-10-10, the validated historical warehouse covers
+**2024-01-01–2025-03-31: 456 consecutive days, 15 complete months and 5,020
+technology observations**. The complete 2024 leap year remains unchanged, and
+the original Q1 2025 baseline was integrated entirely through checksum-verified
+offline replay.
 
-Q4 passed monthly validation directly. Its generation was **5.60% lower** than
-Q3, while its energy-weighted renewable share was **2.36 percentage points
-lower**. All 130 active source manifests were replayed offline with checksum
-verification; source tables and all three CSV exports matched exactly. See the
-[full-year analysis and source evidence](reports/baseline-2024-full-year.md),
-the [Q1–Q3 analysis](reports/baseline-2024-q1-q3.md) and the
-[March recovery](reports/march-2024-daily-recovery.md).
+All 133 active source manifests reproduce the combined warehouse exactly; source
+tables and all three CSV exports match byte for byte. The Q1 replay audit records
+990 added technology observations and 90 added published totals, with no changes
+or removals. See the [Q1 integration evidence](reports/history-2025-q1-integration.md),
+the [full-year 2024 analysis](reports/baseline-2024-full-year.md) and the
+[original Q1 2025 baseline](reports/baseline-2025-q1.md).
 
-The validated Q1 2025 baseline exists separately, but the historical warehouse
-still needs the complete 2025 calendar year. The historical report correctly
-refuses this incomplete two-year selection; the multi-year analysis is not yet
-complete.
+The remaining **nine months (April–December 2025)** are pending. The historical
+report correctly refuses this incomplete two-year selection; the multi-year
+analysis is not yet complete.
 
 ## Audit source revisions
 
