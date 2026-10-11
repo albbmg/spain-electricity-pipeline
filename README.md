@@ -169,20 +169,19 @@ renewable shares and percentage-point changes are shown alongside generation tot
 and daily averages, so leap-year differences remain visible. Only the selected years
 and their currently referenced source evidence appear in the report.
 
-**Real-data status:** on 2026-10-10, the validated historical warehouse covers
-**2024-01-01–2025-03-31: 456 consecutive days, 15 complete months and 5,020
-technology observations**. The complete 2024 leap year remains unchanged, and
-the original Q1 2025 baseline was integrated entirely through checksum-verified
-offline replay.
+**Real-data status:** on 2026-10-11, the validated historical warehouse covers
+**2024-01-01–2025-06-30: 547 consecutive days, 18 complete months and 6,021
+technology observations**. The previously verified history through Q1 2025
+remained exactly unchanged when three validated monthly Q2 windows were added.
 
-All 133 active source manifests reproduce the combined warehouse exactly; source
-tables and all three CSV exports match byte for byte. The Q1 replay audit records
-990 added technology observations and 90 added published totals, with no changes
-or removals. See the [Q1 integration evidence](reports/history-2025-q1-integration.md),
-the [full-year 2024 analysis](reports/baseline-2024-full-year.md) and the
-[original Q1 2025 baseline](reports/baseline-2025-q1.md).
+All 136 active source manifests reproduce the combined warehouse exactly; source
+tables and all three CSV exports match byte for byte. The Q2 audit records 1,001
+added technology observations and 91 added published totals, with no changes or
+removals. See the [Q2 extension evidence](reports/history-2025-q2-extension.md),
+the [Q1 integration evidence](reports/history-2025-q1-integration.md) and the
+[full-year 2024 analysis](reports/baseline-2024-full-year.md).
 
-The remaining **nine months (April–December 2025)** are pending. The historical
+The remaining **six months (July–December 2025)** are pending. The historical
 report correctly refuses this incomplete two-year selection; the multi-year
 analysis is not yet complete.
 
