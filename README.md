@@ -169,19 +169,19 @@ renewable shares and percentage-point changes are shown alongside generation tot
 and daily averages, so leap-year differences remain visible. Only the selected years
 and their currently referenced source evidence appear in the report.
 
-**Real-data status:** on 2026-10-11, the validated historical warehouse covers
-**2024-01-01–2025-06-30: 547 consecutive days, 18 complete months and 6,021
-technology observations**. The previously verified history through Q1 2025
-remained exactly unchanged when three validated monthly Q2 windows were added.
+**Real-data status:** on 2026-10-12, the validated historical warehouse covers
+**2024-01-01–2025-09-30: 639 consecutive days, 21 complete months and 7,110
+technology observations**. The previously verified history through Q2 2025
+remained exactly unchanged when Q3 was recovered with explicit daily windows.
 
-All 136 active source manifests reproduce the combined warehouse exactly; source
-tables and all three CSV exports match byte for byte. The Q2 audit records 1,001
-added technology observations and 91 added published totals, with no changes or
-removals. See the [Q2 extension evidence](reports/history-2025-q2-extension.md),
-the [Q1 integration evidence](reports/history-2025-q1-integration.md) and the
+All 228 active source manifests reproduce the combined warehouse exactly; source
+tables and all three CSV exports match byte for byte. The Q3 audit records 1,089
+added technology observations and 92 added published totals, with no changes or
+removals. See the [Q3 extension evidence](reports/history-2025-q3-extension.md),
+the [Q2 extension evidence](reports/history-2025-q2-extension.md) and the
 [full-year 2024 analysis](reports/baseline-2024-full-year.md).
 
-The remaining **six months (July–December 2025)** are pending. The historical
+The remaining **three months (October–December 2025)** are pending. The historical
 report correctly refuses this incomplete two-year selection; the multi-year
 analysis is not yet complete.
 
