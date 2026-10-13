@@ -13,18 +13,14 @@ and verification; a plan or specification is not an implemented feature.
 - [x] **Revision tracking** — compare each window before replacement, record separate
    technology/total change counts and prior retrieval IDs, and print an audit summary
    for live and replay loads. Data and audit commit or roll back together.
-- [ ] **Historical analysis** — extend the baseline to multiple complete years; interpret
+- [x] **Historical analysis** — extend the baseline to multiple complete years; interpret
    seasonal changes and comparable periods without mixing incomplete months.
-   The report command and offline completeness/comparison tests are implemented.
-   Explicit daily request windows recovered the sparse March 2024 response with
-   unchanged validation and verified offline replay; see the
-   [recovery evidence](../reports/march-2024-daily-recovery.md).
-   [The historical warehouse now includes Q3 2025](../reports/history-2025-q3-extension.md):
-   639 consecutive days, 21 complete months and 7,110 observations from
-   2024-01-01 through 2025-09-30. All 228 active manifests reproduce the
-   warehouse and CSVs offline, with the history through Q2 2025 unchanged.
-   Acquire and verify October–December 2025, investigate any sparse responses,
-   and execute the complete two-year report before checking this milestone off.
+   The executed [2024–2025 report](../reports/history-2024-2025.md) covers 731
+   consecutive days, 24 complete months and 8,214 observations. All 231 active
+   manifests reproduce the source tables, CSVs and report exactly; see the
+   [completion evidence](../reports/history-2025-q4-completion.md). Sparse source
+   series were recovered only through explicit daily requests under unchanged
+   validation, with no imputation.
 - [ ] **Power BI** — import the exported daily and monthly tables, define measures and
    build and actually verify a compact report. A specification is not a finished PBIX.
 

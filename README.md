@@ -169,21 +169,23 @@ renewable shares and percentage-point changes are shown alongside generation tot
 and daily averages, so leap-year differences remain visible. Only the selected years
 and their currently referenced source evidence appear in the report.
 
-**Real-data status:** on 2026-10-12, the validated historical warehouse covers
-**2024-01-01–2025-09-30: 639 consecutive days, 21 complete months and 7,110
-technology observations**. The previously verified history through Q2 2025
-remained exactly unchanged when Q3 was recovered with explicit daily windows.
+**Real-data status:** on 2026-10-13, the validated historical warehouse covers
+**2024-01-01–2025-12-31: 731 consecutive days, 24 complete months and 8,214
+technology observations**. Q4 2025 completed the two-year selection without
+changing the previously verified history through Q3.
 
-All 228 active source manifests reproduce the combined warehouse exactly; source
-tables and all three CSV exports match byte for byte. The Q3 audit records 1,089
-added technology observations and 92 added published totals, with no changes or
-removals. See the [Q3 extension evidence](reports/history-2025-q3-extension.md),
-the [Q2 extension evidence](reports/history-2025-q2-extension.md) and the
-[full-year 2024 analysis](reports/baseline-2024-full-year.md).
+All 231 active source manifests reproduce the combined warehouse exactly; source
+tables, all three CSV exports and the generated history report match byte for byte.
+The Q4 audit records 1,104 added technology observations and 92 added published
+totals, with no changes or removals.
 
-The remaining **three months (October–December 2025)** are pending. The historical
-report correctly refuses this incomplete two-year selection; the multi-year
-analysis is not yet complete.
+The guarded [2024–2025 historical report](reports/history-2024-2025.md) now runs
+successfully. Generation was **248,642.883 GWh** in 2024 and **258,120.232 GWh**
+in 2025; the daily average changed **+4.10%** and renewable share changed from
+**58.96%** to **57.54%**. See the
+[Q4 completion evidence](reports/history-2025-q4-completion.md) and the
+[Q3 extension evidence](reports/history-2025-q3-extension.md). These are
+descriptive results for the selected years, not causal findings or a long-term trend.
 
 ## Audit source revisions
 
