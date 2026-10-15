@@ -137,6 +137,25 @@ events when upgrading an existing database, and no row-level version store.
 
 ## Historical comparison contract
 
+### Offline dashboard technology rows
+
+The dashboard uses `monthly_technology` at month × source ID × name × renewable
+classification grain. Names and classifications are source attributes, not stable
+identifiers; variants remain separate even when they share an ID or a label.
+Observed-day counts refer to that exact combination and are displayed beside the
+month's calendar-day count. Missing observations are never imputed as zero, and
+zero-valued observations are retained. Rounded GWh can display as zero for a small
+nonzero measurement; exact decimal MWh remain in the embedded snapshot.
+
+The month filter is limited to the selected complete years. Classification filters
+hide table rows only: each contribution's denominator remains all technology energy
+in the full month. Overview indicators and retrieval evidence retain the selected
+year/combined-period scope. Published totals are separate controls, never rows in
+the technology table. This breakdown describes observed contributions, not each
+technology's full-calendar output when its coverage is partial.
+
+### Complete calendar periods
+
 The history command selects an explicit inclusive range of at least two past
 calendar years. It opens the warehouse read-only, runs the existing quality checks,
 then requires every selected month and day to be present. A missing whole month,

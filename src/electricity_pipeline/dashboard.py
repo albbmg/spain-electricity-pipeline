@@ -18,6 +18,26 @@ from electricity_pipeline.source import REGION
 def snapshot(connection: duckdb.DuckDBPyConnection, start_year: int, end_year: int) -> dict:
     """Compute display values in Decimal, preserving the history completeness gate."""
     months = [p for p in periods(connection, start_year, end_year) if p.grain == "month"]
+    technology_rows = connection.execute(
+        "SELECT month, technology_id, technology, renewable, days_observed, generation_mwh "
+        "FROM monthly_technology WHERE region = ? AND month BETWEEN ? AND ? "
+        "ORDER BY month, generation_mwh DESC, technology_id, technology, renewable",
+        [REGION, months[0].start, months[-1].start],
+    ).fetchall()
+    totals = {p.start: p.generation_mwh for p in months}
+    technologies = {p.start: [] for p in months}
+    for month, identity, name, renewable, observed, energy in technology_rows:
+        technologies[month].append(
+            {
+                "id": identity,
+                "name": name,
+                "renewable": renewable,
+                "days_observed": observed,
+                "generation_mwh": str(energy),
+                "generation_gwh": f"{energy / 1000:,.3f}",
+                "system_share": f"{energy / totals[month]:.2%}",
+            }
+        )
     selections = {}
     for key in ["all", *map(str, range(start_year, end_year + 1))]:
         selected = [p for p in months if key == "all" or p.start.year == int(key)]
@@ -59,6 +79,7 @@ def snapshot(connection: duckdb.DuckDBPyConnection, start_year: int, end_year: i
                     # Browser floats are used only for bar widths, never KPI arithmetic.
                     "generation_mwh": str(p.generation_mwh),
                     "renewable_mwh": str(p.renewable_mwh),
+                    "technologies": technologies[p.start],
                 }
                 for p in selected
             ],

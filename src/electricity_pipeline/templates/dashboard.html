@@ -15,6 +15,12 @@
     p { margin:8px 0; }
     .muted, .note { color:var(--muted); }
     .toolbar { display:flex; justify-content:space-between; align-items:center; gap:18px; margin:28px 0; }
+    .filters { display:flex; flex-wrap:wrap; gap:16px; margin:20px 0; }
+    .filters label { display:block; margin-bottom:6px; }
+    .filters select { margin-left:0; max-width:100%; }
+    .technology-name { display:block; font-weight:650; }
+    .technology-id { display:block; overflow-wrap:anywhere; color:var(--muted); font-size:.8rem; }
+    #technology-table { min-width:600px; }
     label { font-weight:650; }
     select { font:inherit; margin-left:12px; border:1px solid #8ca29a; border-radius:8px; padding:9px 14px; background:white; color:var(--ink); }
     :focus-visible { outline:3px solid #c46b11; outline-offset:3px; }
@@ -83,6 +89,26 @@
         </table></div>
       </details>
     </section>
+    <section class="panel" aria-labelledby="technology-title">
+      <h2 id="technology-title">Technology breakdown</h2>
+      <p class="note">Explore observed contributions to a complete calendar month. These filters apply only to this table; the overview and source evidence follow Period.</p>
+      <div class="filters">
+        <div><label for="technology-month">Month</label><select id="technology-month"></select></div>
+        <div><label for="technology-class">Classification</label><select id="technology-class">
+          <option value="all">All technologies</option><option value="renewable">Renewable</option><option value="non-renewable">Non-renewable</option>
+        </select></div>
+      </div>
+      <p id="technology-status" role="status"></p>
+      <div class="scroll" tabindex="0" role="region" aria-label="Technology values, scroll horizontally on small screens">
+        <table id="technology-table">
+          <caption>Share uses all technology generation in the month, including rows hidden by the classification filter.</caption>
+          <thead><tr><th scope="col">Technology / source ID</th><th scope="col">Classification</th><th scope="col">Observed days / calendar days</th><th scope="col">Generation (GWh)</th><th scope="col">System share</th></tr></thead>
+          <tbody id="technology-rows"></tbody>
+        </table>
+      </div>
+      <p id="technology-empty" hidden>No technology observations match this classification in this month.</p>
+      <p class="note">Partial coverage means fewer observed days, not measured zero on the missing days. Absent series are omitted; recorded zero values remain visible. Names or classifications that change within a month appear as separate rows under the same source ID. GWh are rounded to three decimals, so a displayed 0.000 can also be a small nonzero value.</p>
+    </section>
     <section class="panel" aria-labelledby="quality-title">
       <h2 id="quality-title">Reconciled with the source</h2>
       <p id="reconciliation"></p>
@@ -116,6 +142,26 @@ for (const [key, item] of Object.entries(data.selections)) {
   option.value = key;
   select.append(option);
 }
+function updateTechnologies() {
+  const row = data.selections[select.value].rows.find(row => row.month === byId("technology-month").value);
+  const classification = byId("technology-class").value;
+  const visible = row.technologies.filter(technology => classification === "all" ||
+    technology.renewable === (classification === "renewable"));
+  byId("technology-status").textContent = row.month + " · " + visible.length + " of " + row.technologies.length +
+    " observed technology rows · Full-month generation: " + row.generation_gwh + " GWh";
+  byId("technology-rows").replaceChildren();
+  for (const technology of visible) {
+    const tr = make("tr");
+    const name = make("th");
+    name.scope = "row";
+    name.append(make("span", technology.name, "technology-name"), make("span", "ID: " + technology.id, "technology-id"));
+    tr.append(name);
+    for (const value of [technology.renewable ? "Renewable" : "Non-renewable",
+      technology.days_observed + " / " + row.days, technology.generation_gwh, technology.system_share]) tr.append(make("td", value));
+    byId("technology-rows").append(tr);
+  }
+  byId("technology-empty").hidden = visible.length !== 0;
+}
 function update() {
   const item = data.selections[select.value];
   byId("generation").textContent = item.generation_gwh;
@@ -125,8 +171,13 @@ function update() {
   byId("reconciliation").textContent = "Published total: " + item.published_gwh + " GWh. Maximum absolute daily difference: " + item.max_daily_difference_mwh + " MWh.";
   byId("chart").replaceChildren();
   byId("monthly-rows").replaceChildren();
+  const previousMonth = byId("technology-month").value;
+  byId("technology-month").replaceChildren();
   const maximum = Math.max(...item.rows.map(row => Number(row.generation_mwh)));
   for (const row of item.rows) {
+    const monthOption = make("option", row.month);
+    monthOption.value = row.month;
+    byId("technology-month").append(monthOption);
     const bar = make("div", undefined, "chart-row");
     const track = make("div", undefined, "track");
     const renew = make("span", undefined, "renew");
@@ -140,6 +191,8 @@ function update() {
     for (const value of [row.month, row.days, row.generation_gwh, row.renewable_share]) tr.append(make("td", value));
     byId("monthly-rows").append(tr);
   }
+  byId("technology-month").value = item.rows.some(row => row.month === previousMonth) ? previousMonth : item.rows.at(-1).month;
+  updateTechnologies();
   byId("evidence-title").textContent = "Source evidence · " + item.evidence.length + " retrievals";
   byId("evidence").replaceChildren();
   for (const [id, first, last, updated, retrieved, sha] of item.evidence) {
@@ -154,6 +207,8 @@ function update() {
 select.value = data.default;
 update();
 select.addEventListener("change", update);
+byId("technology-month").addEventListener("change", updateTechnologies);
+byId("technology-class").addEventListener("change", updateTechnologies);
 byId("app").hidden = false;
 </script>
 </body>

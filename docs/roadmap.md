@@ -25,10 +25,11 @@ and verification; a plan or specification is not an implemented feature.
    a year selector, weighted KPIs, monthly generation bars, accessible value tables
    and selected-period source evidence. Use the existing completeness and quality
    gates; keep the warehouse read-only and replace the HTML atomically.
-- [ ] **Web dashboard: technology breakdown** — show monthly technology contributions
+- [x] **Web dashboard: technology breakdown** — show monthly technology contributions
    with source IDs, renewable classification and observed-day coverage. Do not treat
    absent technology observations as measured zeros or add the published total as a
-   technology. Verify filters and reconciliation against SQL.
+   technology. Filters and reconciliation are verified against SQL; see the
+   [executed synthetic and browser checks](../reports/dashboard-technology-verification.md).
 - [ ] **Web dashboard: comparable periods** — expose same-calendar-month YoY changes,
    daily averages for leap-year comparisons and percentage-point share changes.
    Verify displayed values and filtered source evidence against the historical report.
