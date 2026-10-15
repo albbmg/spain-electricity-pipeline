@@ -99,7 +99,34 @@ technology coverage visible. Use `daily_mix`/`monthly_mix` for system-wide total
 Exports represent **all loaded dates in the database**, not just the most recent
 request. A failed run does not refresh the export set: fix the error and rerun
 before using earlier CSVs. The CSVs can be imported into Power BI; a finished
-Power BI report is a later milestone, not part of this version.
+Power BI report is an optional future extension, not part of this version.
+
+## Offline interactive dashboard
+
+Build a self-contained HTML report from a validated historical warehouse:
+
+```bash
+python -m electricity_pipeline.dashboard --database data/history.duckdb --start-year 2024 --end-year 2025 --output data/dashboard.html
+```
+
+Open `data/dashboard.html` in a browser. No server, API request, external script or
+Power BI installation is needed. JavaScript must be enabled. Select a year or the
+entire period to explore generation, energy-weighted renewable share, daily average
+and monthly generation bars. Expand the monthly table for exact values and the
+source evidence for acquisition timestamps, provider update dates and checksums.
+
+The command requires at least two complete past years and runs the same quality
+and completeness checks as the historical report. It opens the warehouse read-only
+and replaces the HTML atomically after successful validation; failures preserve an
+existing report. The output directory must already exist. Published totals remain
+separate controls. KPI arithmetic uses Python Decimal; browser floating-point
+numbers only set chart widths. Chart scales adjust to the selected period.
+
+The report includes derived aggregates and source metadata, not raw downloads or
+the database. Retain its attribution and provider terms when sharing it. An HTML
+snapshot does not refresh itself: regenerate it after validated data updates.
+The web dashboard is the active presentation path; Power BI remains optional.
+See the [executed dashboard checks](reports/dashboard-overview-verification.md).
 
 ## Rebuild from an archive without the API
 
@@ -144,10 +171,12 @@ The tests use **explicitly synthetic source examples** and real temporary DuckDB
 databases. They require no network access. They cover duplicate and missing
 observations, DST, invalid numbers, bounded retries, total reconciliation,
 transaction rollback, repeat loads, revised partitions and weighted percentages.
-The current suite contains **104 passing tests**, including offline replay, manifest
+The current suite contains **111 passing tests**, including offline replay, manifest
 integrity, timestamp preservation, revision counts, audit rollback and compatibility
 with existing warehouses. Historical-report tests also cover leap years, weighted
 shares, matching calendar months, selected-period lineage and rejection of gaps.
+Dashboard tests cover weighted indicators, isolated published totals, safe embedded
+JSON, deterministic output, read-only access and preservation of a report on failure.
 
 The real-data baseline is a separate executed check, not a synthetic test result.
 The included GitHub Actions workflow runs linting and tests on Python 3.12 and

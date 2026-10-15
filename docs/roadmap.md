@@ -21,10 +21,26 @@ and verification; a plan or specification is not an implemented feature.
    [completion evidence](../reports/history-2025-q4-completion.md). Sparse source
    series were recovered only through explicit daily requests under unchanged
    validation, with no imputation.
-- [ ] **Power BI** — import the exported daily and monthly tables, define measures and
-   build and actually verify a compact report. A specification is not a finished PBIX.
+- [x] **Offline web dashboard: overview** — generate a portable HTML report with
+   a year selector, weighted KPIs, monthly generation bars, accessible value tables
+   and selected-period source evidence. Use the existing completeness and quality
+   gates; keep the warehouse read-only and replace the HTML atomically.
+- [ ] **Web dashboard: technology breakdown** — show monthly technology contributions
+   with source IDs, renewable classification and observed-day coverage. Do not treat
+   absent technology observations as measured zeros or add the published total as a
+   technology. Verify filters and reconciliation against SQL.
+- [ ] **Web dashboard: comparable periods** — expose same-calendar-month YoY changes,
+   daily averages for leap-year comparisons and percentage-point share changes.
+   Verify displayed values and filtered source evidence against the historical report.
+- [ ] **Web dashboard: portfolio delivery** — add verified desktop/mobile screenshots,
+   a portable example with attribution and instructions for opening the report.
+   Check keyboard access and offline interaction before marking delivery complete.
 
-Scheduled work must inspect the current branch and roadmap, complete one useful
-task, run its relevant checks and commit only a verified improvement. No empty
+Power BI is an **optional future extension**, outside the active milestones. It may
+be resumed only with an environment that can build, open and verify the real report.
+A specification or unverified PBIP is not a finished Power BI implementation.
+
+Scheduled work must inspect the current branch and roadmap, work on useful small
+tasks, run their relevant checks and commit only verified improvements. No empty
 commits, manufactured dates, churn or fabricated analytical findings. If blocked,
 report the blocker and leave the current working version intact.

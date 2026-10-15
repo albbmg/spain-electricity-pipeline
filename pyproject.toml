@@ -20,7 +20,7 @@ electricity-pipeline = "electricity_pipeline.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-electricity_pipeline = ["sql/*.sql"]
+electricity_pipeline = ["sql/*.sql", "templates/*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

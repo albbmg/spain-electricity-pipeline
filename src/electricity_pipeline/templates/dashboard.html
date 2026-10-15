@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Peninsular Spain · Electricity generation</title>
+  <style>
+    :root { color-scheme: light; --ink:#183734; --muted:#506661; --green:#187967; --sand:#acb9b3; --paper:#f4f6f1; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.5 system-ui,sans-serif; }
+    main { max-width:1120px; margin:auto; padding:40px 28px; }
+    .eyebrow { text-transform:uppercase; letter-spacing:.15em; font-size:.75rem; font-weight:700; }
+    h1 { font-size:clamp(2rem,5vw,3.6rem); line-height:1.1; letter-spacing:-.04em; margin:16px 0; }
+    h2 { font-size:1.3rem; margin:0 0 8px; }
+    p { margin:8px 0; }
+    .muted, .note { color:var(--muted); }
+    .toolbar { display:flex; justify-content:space-between; align-items:center; gap:18px; margin:28px 0; }
+    label { font-weight:650; }
+    select { font:inherit; margin-left:12px; border:1px solid #8ca29a; border-radius:8px; padding:9px 14px; background:white; color:var(--ink); }
+    :focus-visible { outline:3px solid #c46b11; outline-offset:3px; }
+    .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    .card, .panel { background:white; border:1px solid #d5dfd8; border-radius:14px; padding:24px; }
+    .card strong { display:block; font-size:clamp(1.65rem,3vw,2.2rem); letter-spacing:-.04em; margin:6px 0; }
+    .card span { color:var(--muted); font-size:.85rem; }
+    .panel { margin-top:20px; }
+    .legend { display:flex; flex-wrap:wrap; gap:18px; font-size:.85rem; margin:16px 0; }
+    .key::before { content:""; display:inline-block; width:12px; height:12px; border-radius:3px; background:var(--green); margin-right:7px; }
+    .key.non::before { background:var(--sand); }
+    .chart-row { display:grid; grid-template-columns:75px 1fr 110px; gap:14px; align-items:center; margin:9px 0; font-size:.85rem; }
+    .track { height:22px; display:flex; }
+    .renew { background:var(--green); }
+    .non-renew { background:var(--sand); }
+    .value { text-align:right; font-variant-numeric:tabular-nums; }
+    .scroll { overflow-x:auto; }
+    table { border-collapse:collapse; width:100%; font-variant-numeric:tabular-nums; font-size:.9rem; }
+    th,td { border-bottom:1px solid #e2e8e2; padding:12px 10px; text-align:right; }
+    th:first-child,td:first-child { text-align:left; }
+    caption { text-align:left; color:var(--muted); padding:10px 0; }
+    details { margin-top:20px; }
+    summary { cursor:pointer; font-weight:650; padding:8px 0; }
+    .evidence { overflow-wrap:anywhere; font-size:.8rem; padding-left:22px; }
+    .evidence li { border-top:1px solid #d5dfd8; padding:10px 0; }
+    .evidence p { margin:3px 0; }
+    footer { border-top:1px solid #c9d7ce; margin-top:32px; padding-top:20px; font-size:.85rem; }
+    a { color:#125c50; text-underline-offset:3px; }
+    [hidden] { display:none !important; }
+    @media(max-width:650px) {
+      main { padding:24px 16px; } .cards { grid-template-columns:1fr; gap:10px; }
+      .card { padding:16px 20px; } .toolbar { align-items:flex-start; flex-direction:column; }
+      .panel { padding:18px 14px; } .chart-row { grid-template-columns:64px 1fr 88px; gap:6px; font-size:.75rem; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Spain Electricity Pipeline / Historical explorer</div>
+    <h1>How electricity<br>was generated.</h1>
+    <p class="muted">Peninsular Spain · Energy in GWh · Source: Red Eléctrica de España, REData</p>
+  </header>
+  <noscript><p>This interactive report needs JavaScript enabled. No network connection is required.</p></noscript>
+  <div id="app" hidden>
+    <div class="toolbar">
+      <div><label for="period">Period</label><select id="period"></select></div>
+      <span id="coverage" class="muted" role="status"></span>
+    </div>
+    <section class="cards" aria-label="Selected-period indicators">
+      <article class="card"><span>Generation · GWh</span><strong id="generation"></strong><span>Sum of technology observations</span></article>
+      <article class="card"><span>Renewable share</span><strong id="share"></strong><span>Weighted by energy, not daily averages</span></article>
+      <article class="card"><span>Daily average · GWh/day</span><strong id="daily"></strong><span>Calendar days, including leap days</span></article>
+    </section>
+    <section class="panel" aria-labelledby="monthly-title">
+      <h2 id="monthly-title">Monthly generation mix</h2>
+      <p class="note">Bar length shows total GWh. Scale adjusts to the selected period; exact values are below.</p>
+      <div class="legend"><span class="key">Renewable</span><span class="key non">Non-renewable</span></div>
+      <div id="chart" aria-hidden="true"></div>
+      <details>
+        <summary>Monthly values</summary>
+        <div class="scroll"><table>
+          <caption>Complete local calendar months · Europe/Madrid</caption>
+          <thead><tr><th scope="col">Month</th><th scope="col">Days</th><th scope="col">Generation (GWh)</th><th scope="col">Renewable share</th></tr></thead>
+          <tbody id="monthly-rows"></tbody>
+        </table></div>
+      </details>
+    </section>
+    <section class="panel" aria-labelledby="quality-title">
+      <h2 id="quality-title">Reconciled with the source</h2>
+      <p id="reconciliation"></p>
+      <p class="note">The published total is a separate control, never another technology. Every day passed the pipeline's reconciliation tolerance. This checks internal consistency, not measurement accuracy.</p>
+      <details>
+        <summary id="evidence-title">Source evidence</summary>
+        <p class="note">Only retrievals used by the selected period are shown. Times retain their UTC offset. Provider update dates do not identify definitive or provisional data.</p>
+        <ol id="evidence" class="evidence"></ol>
+      </details>
+    </section>
+  </div>
+  <footer>
+    <p><strong>Scope &amp; interpretation.</strong> Electricity generation in peninsular Spain, excluding estimated self-consumption under the provider's methodology. These are descriptive historical observations, not demand, prices, emissions or causal findings. Source revisions can change results.</p>
+    <p>Independent educational analysis. Source: Red Eléctrica de España, REData. Source data remain subject to <a href="https://www.ree.es/es/aviso-legal">provider terms</a>, separate from the project's MIT code license. <a href="https://www.ree.es/en/datos/apidata">API documentation</a> · <a href="https://www.ree.es/es/datos/generacion/estructura-generacion">Methodology</a>.</p>
+  </footer>
+</main>
+<script id="dashboard-data" type="application/json">__DASHBOARD_DATA__</script>
+<script>
+"use strict";
+const data = JSON.parse(document.getElementById("dashboard-data").textContent);
+const byId = id => document.getElementById(id);
+const select = byId("period");
+const make = (tag, text, className) => {
+  const element = document.createElement(tag);
+  if (text !== undefined) element.textContent = text;
+  if (className) element.className = className;
+  return element;
+};
+for (const [key, item] of Object.entries(data.selections)) {
+  const option = make("option", key === "all" ? "All years (" + item.label + ")" : item.label);
+  option.value = key;
+  select.append(option);
+}
+function update() {
+  const item = data.selections[select.value];
+  byId("generation").textContent = item.generation_gwh;
+  byId("share").textContent = item.renewable_share;
+  byId("daily").textContent = item.daily_gwh;
+  byId("coverage").textContent = item.label + " · " + item.days + " days · " + item.months + " complete months";
+  byId("reconciliation").textContent = "Published total: " + item.published_gwh + " GWh. Maximum absolute daily difference: " + item.max_daily_difference_mwh + " MWh.";
+  byId("chart").replaceChildren();
+  byId("monthly-rows").replaceChildren();
+  const maximum = Math.max(...item.rows.map(row => Number(row.generation_mwh)));
+  for (const row of item.rows) {
+    const bar = make("div", undefined, "chart-row");
+    const track = make("div", undefined, "track");
+    const renew = make("span", undefined, "renew");
+    const other = make("span", undefined, "non-renew");
+    renew.style.width = 100 * Number(row.renewable_mwh) / maximum + "%";
+    other.style.width = 100 * (Number(row.generation_mwh) - Number(row.renewable_mwh)) / maximum + "%";
+    track.append(renew, other);
+    bar.append(make("span", row.month), track, make("span", row.generation_gwh, "value"));
+    byId("chart").append(bar);
+    const tr = make("tr");
+    for (const value of [row.month, row.days, row.generation_gwh, row.renewable_share]) tr.append(make("td", value));
+    byId("monthly-rows").append(tr);
+  }
+  byId("evidence-title").textContent = "Source evidence · " + item.evidence.length + " retrievals";
+  byId("evidence").replaceChildren();
+  for (const [id, first, last, updated, retrieved, sha] of item.evidence) {
+    const li = make("li");
+    for (const line of ["Window: " + first + " – " + last, "Retrieval: " + id,
+      "Provider last update: " + updated, "Retrieved at: " + retrieved, "SHA-256: " + sha]) {
+      li.append(make("p", line));
+    }
+    byId("evidence").append(li);
+  }
+}
+select.value = data.default;
+update();
+select.addEventListener("change", update);
+byId("app").hidden = false;
+</script>
+</body>
+</html>
