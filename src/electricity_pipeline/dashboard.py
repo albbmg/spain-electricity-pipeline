@@ -5,7 +5,7 @@ import json
 import os
 import sys
 import tempfile
-from datetime import date
+from datetime import UTC, date, datetime
 from importlib.resources import files
 from pathlib import Path
 
@@ -13,6 +13,14 @@ import duckdb
 
 from electricity_pipeline.history import periods
 from electricity_pipeline.source import REGION
+
+
+def _evidence_record(record: tuple | list) -> list[str]:
+    """Canonicalize instants without changing local observation dates or session state."""
+    return [
+        value.astimezone(UTC).isoformat() if isinstance(value, datetime) else str(value)
+        for value in record
+    ]
 
 
 def snapshot(connection: duckdb.DuckDBPyConnection, start_year: int, end_year: int) -> dict:
@@ -29,7 +37,7 @@ def snapshot(connection: duckdb.DuckDBPyConnection, start_year: int, end_year: i
         "ORDER BY month, r.start_date, r.retrieved_at, r.retrieval_id",
         [REGION, months[0].start, date(end_year, 12, 31)],
     ).fetchall():
-        monthly_evidence[month].append([str(value) for value in record])
+        monthly_evidence[month].append(_evidence_record(record))
     comparisons = {}
     for current in months:
         previous = (
@@ -103,7 +111,7 @@ def snapshot(connection: duckdb.DuckDBPyConnection, start_year: int, end_year: i
             "daily_gwh": f"{energy / days / 1000:,.3f}",
             "published_gwh": f"{published / 1000:,.3f}",
             "max_daily_difference_mwh": f"{max_difference:,.6f}",
-            "evidence": [[str(value) for value in row] for row in evidence],
+            "evidence": [_evidence_record(row) for row in evidence],
             "rows": [
                 {
                     "month": p.start.strftime("%Y-%m"),

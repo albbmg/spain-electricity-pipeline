@@ -166,6 +166,13 @@ Technology filters do not change these system-wide comparisons. The panel lists
 only retrievals currently referenced by the two months, separately from overview
 evidence. Obsolete or merely overlapping retrieval records are excluded.
 
+Dashboard source-update and acquisition timestamps serialize as ISO 8601 UTC
+instants, regardless of DuckDB's session timezone. This only changes presentation:
+stored instants and local Europe/Madrid observation dates are preserved, and the
+exporter does not change the caller's session timezone. All evidence panels use
+the same canonical serialization so the HTML can be compared byte for byte across
+machines with different timezone settings.
+
 The history command selects an explicit inclusive range of at least two past
 calendar years. It opens the warehouse read-only, runs the existing quality checks,
 then requires every selected month and day to be present. A missing whole month,

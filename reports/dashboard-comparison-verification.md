@@ -45,6 +45,21 @@ timestamps and checksums remain grouped by the observation month they support.
 
 ## Reproduction and limits
 
+### Timezone portability regression
+
+A follow-up check on the same date reproduced a portability defect: DuckDB returned
+timestamps in the session timezone, so otherwise identical HTML differed across
+exporting computers. The regression test failed before the fix. Evidence now
+serializes the original instants to ISO 8601 UTC in both overview and comparison
+panels, without changing local observation dates, stored values or session settings.
+
+After the fix, all **120 pytest tests** passed. The complete HTML was byte-identical
+under UTC, America/New_York, Europe/Madrid and Asia/Tokyo session settings. Ruff
+checks and all 144 technology / 48 comparison browser selections passed again;
+comparison evidence strings explicitly retained the `+00:00` UTC offset.
+
+### Commands
+
 With project development dependencies, Node.js Playwright and Chromium installed:
 
 ```bash

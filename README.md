@@ -114,6 +114,8 @@ Power BI installation is needed. JavaScript must be enabled. Select a year or th
 entire period to explore generation, energy-weighted renewable share, daily average
 and monthly generation bars. Expand the monthly table for exact values and the
 source evidence for acquisition timestamps, provider update dates and checksums.
+Evidence timestamps are normalized to UTC so the same warehouse produces identical
+HTML across exporting timezones; observation dates remain local Europe/Madrid dates.
 
 The technology table adds month and renewable-classification filters, source IDs,
 observed-day coverage and each contribution's share of full-month generation.
@@ -186,7 +188,7 @@ The tests use **explicitly synthetic source examples** and real temporary DuckDB
 databases. They require no network access. They cover duplicate and missing
 observations, DST, invalid numbers, bounded retries, total reconciliation,
 transaction rollback, repeat loads, revised partitions and weighted percentages.
-The current suite contains **119 passing tests**, including offline replay, manifest
+The current suite contains **120 passing tests**, including offline replay, manifest
 integrity, timestamp preservation, revision counts, audit rollback and compatibility
 with existing warehouses. Historical-report tests also cover leap years, weighted
 shares, matching calendar months, selected-period lineage and rejection of gaps.

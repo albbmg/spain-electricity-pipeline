@@ -56,6 +56,9 @@ const { chromium } = require('playwright');
             ['Renewable share', comparison.previous_renewable_share, row.renewable_share, comparison.share_change_pp + ' pp'],
           ]);
           for (const [id, records] of [['prior', comparison.previous_evidence], ['current', comparison.current_evidence]]) {
+            for (const record of records) {
+              assert(record[3].endsWith('+00:00') && record[4].endsWith('+00:00'));
+            }
             const actualEvidence = await page.locator('#comparison-' + id + '-evidence li').allTextContents();
             assert.deepEqual(actualEvidence, records.map(([identity, first, last, updated, retrieved, sha]) =>
               'Window: ' + first + ' – ' + last + 'Retrieval: ' + identity + 'Provider last update: ' + updated +

@@ -292,6 +292,26 @@ def test_html_embeds_json_safely_and_renders_deterministically(history_path, tmp
     assert "<script src=" not in document
 
 
+def test_html_is_identical_across_session_timezones_without_changing_session(history_path):
+    with duckdb.connect(str(history_path), read_only=True) as connection:
+        connection.execute("SET TimeZone = 'UTC'")
+        expected = dashboard.render(connection, 2024, 2025)
+        for timezone in ["America/New_York", "Europe/Madrid", "Asia/Tokyo"]:
+            connection.execute("SET TimeZone = ?", [timezone])
+            assert dashboard.render(connection, 2024, 2025) == expected
+            assert (
+                connection.execute("SELECT current_setting('TimeZone')").fetchone()[0] == timezone
+            )
+        result = dashboard.snapshot(connection, 2024, 2025)
+        evidence = result["selections"]["all"]["evidence"]
+        for record in evidence:
+            assert record[3] == "2026-01-02T00:00:00+00:00"
+            assert "T" in record[4] and record[4].endswith("+00:00")
+        february = result["selections"]["2025"]["rows"][1]["comparison"]
+        for record in february["previous_evidence"] + february["current_evidence"]:
+            assert record in evidence
+
+
 def test_cli_read_only_atomic_output_and_failure_preserves_existing(history_path, tmp_path):
     output = tmp_path / "dashboard.html"
     before = history_path.read_bytes()
