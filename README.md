@@ -121,6 +121,12 @@ Those filters affect only this table, not the overview or selected-period eviden
 Missing technology days are not filled with zeros; measured zeros remain visible.
 Changes in a source ID's name or classification are shown as separate monthly rows.
 
+The year-on-year panel compares a chosen month with the same month one year earlier
+within the exported history. It shows both months' generation, calendar-day counts,
+daily averages and renewable shares, plus percentage changes and share changes in
+percentage points. Its evidence is scoped to those two months; the first exported
+year has no comparison, even if older data exist elsewhere in the warehouse.
+
 The command requires at least two complete past years and runs the same quality
 and completeness checks as the historical report. It opens the warehouse read-only
 and replaces the HTML atomically after successful validation; failures preserve an
@@ -135,6 +141,7 @@ The web dashboard is the active presentation path; Power BI remains optional.
 See the [executed dashboard checks](reports/dashboard-overview-verification.md).
 The [technology verification](reports/dashboard-technology-verification.md) records
 SQL reconciliation, sparse-series cases and offline desktop/mobile filter checks.
+See also the [comparable-period verification](reports/dashboard-comparison-verification.md).
 
 ## Rebuild from an archive without the API
 
@@ -179,7 +186,7 @@ The tests use **explicitly synthetic source examples** and real temporary DuckDB
 databases. They require no network access. They cover duplicate and missing
 observations, DST, invalid numbers, bounded retries, total reconciliation,
 transaction rollback, repeat loads, revised partitions and weighted percentages.
-The current suite contains **114 passing tests**, including offline replay, manifest
+The current suite contains **119 passing tests**, including offline replay, manifest
 integrity, timestamp preservation, revision counts, audit rollback and compatibility
 with existing warehouses. Historical-report tests also cover leap years, weighted
 shares, matching calendar months, selected-period lineage and rejection of gaps.
@@ -187,6 +194,9 @@ Dashboard tests cover weighted indicators, isolated published totals, safe embed
 JSON, deterministic output, read-only access and preservation of a report on failure.
 Technology cases independently aggregate source rows with SQL, covering sparse
 observations, recorded zeros, absent series and changes in names/classifications.
+Monthly comparisons are checked against the generated historical report, including
+leap-year daily averages, negative/zero changes, unrounded percentage-point arithmetic
+and currently referenced source evidence for both months.
 
 The real-data baseline is a separate executed check, not a synthetic test result.
 The included GitHub Actions workflow runs linting and tests on Python 3.12 and

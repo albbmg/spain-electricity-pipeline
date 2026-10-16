@@ -30,9 +30,10 @@ and verification; a plan or specification is not an implemented feature.
    absent technology observations as measured zeros or add the published total as a
    technology. Filters and reconciliation are verified against SQL; see the
    [executed synthetic and browser checks](../reports/dashboard-technology-verification.md).
-- [ ] **Web dashboard: comparable periods** — expose same-calendar-month YoY changes,
+- [x] **Web dashboard: comparable periods** — expose same-calendar-month YoY changes,
    daily averages for leap-year comparisons and percentage-point share changes.
-   Verify displayed values and filtered source evidence against the historical report.
+   Displayed values and filtered evidence match the historical report generated over
+   the same synthetic warehouse; see the [executed checks](../reports/dashboard-comparison-verification.md).
 - [ ] **Web dashboard: portfolio delivery** — add verified desktop/mobile screenshots,
    a portable example with attribution and instructions for opening the report.
    Check keyboard access and offline interaction before marking delivery complete.

@@ -156,6 +156,16 @@ technology's full-calendar output when its coverage is partial.
 
 ### Complete calendar periods
 
+The dashboard compares each current month with the same month one year earlier,
+only within its explicitly exported year range. Selecting a year chooses current
+months, not the comparison baseline: the previous year can be outside that UI
+selection but never outside the export. First-year comparisons are unavailable,
+not zero. Total and daily-average YoY use exact Decimal ratios before formatting;
+share change subtracts unrounded energy-weighted shares and multiplies by 100.
+Technology filters do not change these system-wide comparisons. The panel lists
+only retrievals currently referenced by the two months, separately from overview
+evidence. Obsolete or merely overlapping retrieval records are excluded.
+
 The history command selects an explicit inclusive range of at least two past
 calendar years. It opens the warehouse read-only, runs the existing quality checks,
 then requires every selected month and day to be present. A missing whole month,

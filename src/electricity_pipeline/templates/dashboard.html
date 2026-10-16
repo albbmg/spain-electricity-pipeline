@@ -21,6 +21,7 @@
     .technology-name { display:block; font-weight:650; }
     .technology-id { display:block; overflow-wrap:anywhere; color:var(--muted); font-size:.8rem; }
     #technology-table { min-width:600px; }
+    #comparison-table { min-width:540px; }
     label { font-weight:650; }
     select { font:inherit; margin-left:12px; border:1px solid #8ca29a; border-radius:8px; padding:9px 14px; background:white; color:var(--ink); }
     :focus-visible { outline:3px solid #c46b11; outline-offset:3px; }
@@ -109,6 +110,29 @@
       <p id="technology-empty" hidden>No technology observations match this classification in this month.</p>
       <p class="note">Partial coverage means fewer observed days, not measured zero on the missing days. Absent series are omitted; recorded zero values remain visible. Names or classifications that change within a month appear as separate rows under the same source ID. GWh are rounded to three decimals, so a displayed 0.000 can also be a small nonzero value.</p>
     </section>
+    <section class="panel" aria-labelledby="comparison-title">
+      <h2 id="comparison-title">Same month, previous year</h2>
+      <p class="note">Compare complete calendar months within this export. Period selects the current months; the prior year may be outside the selected year. Technology filters do not affect these system-wide comparisons.</p>
+      <div class="filters"><div><label for="comparison-month">Comparison month</label><select id="comparison-month"></select></div></div>
+      <p id="comparison-status" role="status"></p>
+      <div id="comparison-result" hidden>
+        <p class="note">On narrow screens, scroll the table horizontally to read every column.</p>
+        <div class="scroll" tabindex="0" role="region" aria-label="Year-on-year comparison values, scroll horizontally on small screens">
+          <table id="comparison-table">
+            <caption>YoY means year-on-year; pp means percentage points.</caption>
+            <thead><tr><th scope="col">Metric</th><th id="comparison-prior" scope="col"></th><th id="comparison-current" scope="col"></th><th scope="col">Change YoY</th></tr></thead>
+            <tbody id="comparison-rows"></tbody>
+          </table>
+        </div>
+        <p class="note">Daily averages divide by each month's calendar days, including leap days. Share change uses unrounded, energy-weighted shares. These comparisons do not adjust for weather or establish causes.</p>
+        <details>
+          <summary id="comparison-evidence-title">Comparison source evidence</summary>
+          <p class="note">Only retrievals currently used by these two months are shown, grouped by observation month. Provider update and retrieval times are not observation dates.</p>
+          <h3 id="comparison-prior-evidence-title"></h3><ol id="comparison-prior-evidence" class="evidence"></ol>
+          <h3 id="comparison-current-evidence-title"></h3><ol id="comparison-current-evidence" class="evidence"></ol>
+        </details>
+      </div>
+    </section>
     <section class="panel" aria-labelledby="quality-title">
       <h2 id="quality-title">Reconciled with the source</h2>
       <p id="reconciliation"></p>
@@ -162,6 +186,49 @@ function updateTechnologies() {
   }
   byId("technology-empty").hidden = visible.length !== 0;
 }
+function renderEvidence(target, records) {
+  target.replaceChildren();
+  for (const [id, first, last, updated, retrieved, sha] of records) {
+    const li = make("li");
+    for (const line of ["Window: " + first + " – " + last, "Retrieval: " + id,
+      "Provider last update: " + updated, "Retrieved at: " + retrieved, "SHA-256: " + sha]) li.append(make("p", line));
+    target.append(li);
+  }
+}
+function updateComparison() {
+  const row = data.selections[select.value].rows.find(row => row.month === byId("comparison-month").value);
+  const comparison = row.comparison;
+  byId("comparison-result").hidden = comparison === null;
+  byId("comparison-rows").replaceChildren();
+  byId("comparison-prior-evidence").replaceChildren();
+  byId("comparison-current-evidence").replaceChildren();
+  if (comparison === null) {
+    byId("comparison-status").textContent = row.month + " · No previous-year comparison within the exported history. Missing comparisons are not zero changes.";
+    return;
+  }
+  byId("comparison-status").textContent = row.month + " versus " + comparison.previous_month + " · Complete local calendar months";
+  byId("comparison-prior").textContent = comparison.previous_month;
+  byId("comparison-current").textContent = row.month;
+  const metrics = [
+    ["Calendar days", comparison.previous_days, row.days, "—"],
+    ["Generation (GWh)", comparison.previous_generation_gwh, row.generation_gwh, comparison.generation_yoy],
+    ["Daily average (GWh/day)", comparison.previous_daily_gwh, row.daily_gwh, comparison.daily_yoy],
+    ["Renewable share", comparison.previous_renewable_share, row.renewable_share, comparison.share_change_pp + " pp"],
+  ];
+  for (const [label, ...values] of metrics) {
+    const tr = make("tr");
+    const th = make("th", label);
+    th.scope = "row";
+    tr.append(th, ...values.map(value => make("td", value)));
+    byId("comparison-rows").append(tr);
+  }
+  byId("comparison-evidence-title").textContent = "Comparison source evidence · " +
+    (comparison.previous_evidence.length + comparison.current_evidence.length) + " retrievals";
+  byId("comparison-prior-evidence-title").textContent = comparison.previous_month;
+  byId("comparison-current-evidence-title").textContent = row.month;
+  renderEvidence(byId("comparison-prior-evidence"), comparison.previous_evidence);
+  renderEvidence(byId("comparison-current-evidence"), comparison.current_evidence);
+}
 function update() {
   const item = data.selections[select.value];
   byId("generation").textContent = item.generation_gwh;
@@ -173,11 +240,16 @@ function update() {
   byId("monthly-rows").replaceChildren();
   const previousMonth = byId("technology-month").value;
   byId("technology-month").replaceChildren();
+  const previousComparisonMonth = byId("comparison-month").value;
+  byId("comparison-month").replaceChildren();
   const maximum = Math.max(...item.rows.map(row => Number(row.generation_mwh)));
   for (const row of item.rows) {
     const monthOption = make("option", row.month);
     monthOption.value = row.month;
     byId("technology-month").append(monthOption);
+    const comparisonOption = make("option", row.month);
+    comparisonOption.value = row.month;
+    byId("comparison-month").append(comparisonOption);
     const bar = make("div", undefined, "chart-row");
     const track = make("div", undefined, "track");
     const renew = make("span", undefined, "renew");
@@ -193,22 +265,17 @@ function update() {
   }
   byId("technology-month").value = item.rows.some(row => row.month === previousMonth) ? previousMonth : item.rows.at(-1).month;
   updateTechnologies();
+  byId("comparison-month").value = item.rows.some(row => row.month === previousComparisonMonth) ? previousComparisonMonth : item.rows.at(-1).month;
+  updateComparison();
   byId("evidence-title").textContent = "Source evidence · " + item.evidence.length + " retrievals";
-  byId("evidence").replaceChildren();
-  for (const [id, first, last, updated, retrieved, sha] of item.evidence) {
-    const li = make("li");
-    for (const line of ["Window: " + first + " – " + last, "Retrieval: " + id,
-      "Provider last update: " + updated, "Retrieved at: " + retrieved, "SHA-256: " + sha]) {
-      li.append(make("p", line));
-    }
-    byId("evidence").append(li);
-  }
+  renderEvidence(byId("evidence"), item.evidence);
 }
 select.value = data.default;
 update();
 select.addEventListener("change", update);
 byId("technology-month").addEventListener("change", updateTechnologies);
 byId("technology-class").addEventListener("change", updateTechnologies);
+byId("comparison-month").addEventListener("change", updateComparison);
 byId("app").hidden = false;
 </script>
 </body>

@@ -18,6 +18,41 @@ from electricity_pipeline.source import REGION
 def snapshot(connection: duckdb.DuckDBPyConnection, start_year: int, end_year: int) -> dict:
     """Compute display values in Decimal, preserving the history completeness gate."""
     months = [p for p in periods(connection, start_year, end_year) if p.grain == "month"]
+    indexed = {p.start: p for p in months}
+    monthly_evidence = {p.start: [] for p in months}
+    for month, *record in connection.execute(
+        "SELECT DISTINCT CAST(date_trunc('month', t.day) AS DATE) AS month, "
+        "r.retrieval_id, r.start_date, r.end_date, "
+        "r.source_updated_at, r.retrieved_at, r.sha256 "
+        "FROM ingestion_runs r JOIN source_totals t USING (retrieval_id) "
+        "WHERE t.region = ? AND t.day BETWEEN ? AND ? "
+        "ORDER BY month, r.start_date, r.retrieved_at, r.retrieval_id",
+        [REGION, months[0].start, date(end_year, 12, 31)],
+    ).fetchall():
+        monthly_evidence[month].append([str(value) for value in record])
+    comparisons = {}
+    for current in months:
+        previous = (
+            indexed.get(date(current.start.year - 1, current.start.month, 1))
+            if current.start.year > start_year
+            else None
+        )
+        comparisons[current.start] = (
+            {
+                "previous_month": previous.start.strftime("%Y-%m"),
+                "previous_days": previous.days,
+                "previous_generation_gwh": f"{previous.generation_mwh / 1000:,.3f}",
+                "previous_daily_gwh": f"{previous.daily_mwh / 1000:,.3f}",
+                "previous_renewable_share": f"{previous.share:.2%}",
+                "generation_yoy": (f"{current.generation_mwh / previous.generation_mwh - 1:+.2%}"),
+                "daily_yoy": f"{current.daily_mwh / previous.daily_mwh - 1:+.2%}",
+                "share_change_pp": f"{(current.share - previous.share) * 100:+.2f}",
+                "previous_evidence": monthly_evidence[previous.start],
+                "current_evidence": monthly_evidence[current.start],
+            }
+            if previous is not None
+            else None
+        )
     technology_rows = connection.execute(
         "SELECT month, technology_id, technology, renewable, days_observed, generation_mwh "
         "FROM monthly_technology WHERE region = ? AND month BETWEEN ? AND ? "
@@ -73,6 +108,7 @@ def snapshot(connection: duckdb.DuckDBPyConnection, start_year: int, end_year: i
                 {
                     "month": p.start.strftime("%Y-%m"),
                     "days": p.days,
+                    "daily_gwh": f"{p.daily_mwh / 1000:,.3f}",
                     "generation_gwh": f"{p.generation_mwh / 1000:,.3f}",
                     "renewable_share": f"{p.share:.2%}",
                     # Exact values cross the JSON boundary as decimal strings.
@@ -80,6 +116,7 @@ def snapshot(connection: duckdb.DuckDBPyConnection, start_year: int, end_year: i
                     "generation_mwh": str(p.generation_mwh),
                     "renewable_mwh": str(p.renewable_mwh),
                     "technologies": technologies[p.start],
+                    "comparison": comparisons[p.start],
                 }
                 for p in selected
             ],

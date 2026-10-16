@@ -9,7 +9,122 @@ import duckdb
 import pytest
 from test_history import history_path as history_path
 
-from electricity_pipeline import dashboard
+from electricity_pipeline import dashboard, history
+
+
+def test_monthly_comparisons_match_historical_report_and_calendar_lengths(history_path):
+    with duckdb.connect(str(history_path), read_only=True) as connection:
+        result = dashboard.snapshot(connection, 2024, 2025)
+        report = history.render(connection, 2024, 2025)
+    months = result["selections"]["all"]["rows"]
+    assert all(row["comparison"] is None for row in months[:12])
+    for row in months[12:]:
+        previous = next(m for m in months if m["month"] == row["comparison"]["previous_month"])
+        comparison = row["comparison"]
+        assert comparison["previous_month"] == "2024-" + row["month"][-2:]
+        assert comparison["previous_days"] == previous["days"]
+        assert comparison["previous_generation_gwh"] == previous["generation_gwh"]
+        assert comparison["previous_daily_gwh"] == previous["daily_gwh"]
+        assert comparison["previous_renewable_share"] == previous["renewable_share"]
+        assert (
+            f"| {row['month']} | {row['days']} | {row['generation_gwh']} | "
+            f"{row['daily_gwh']} | {row['renewable_share']} | "
+            f"{comparison['generation_yoy']} | {comparison['daily_yoy']} | "
+            f"{comparison['share_change_pp']} |"
+        ) in report
+        for key, month in [
+            ("previous_evidence", previous["month"]),
+            ("current_evidence", row["month"]),
+        ]:
+            evidence = comparison[key]
+            assert len(evidence) == 1
+            assert evidence[0][1].startswith(month)
+            assert evidence[0][2].startswith(month)
+            assert evidence[0] in result["selections"][month[:4]]["evidence"]
+            assert evidence[0][0] in report
+            assert evidence[0][-1] in report
+    february = months[13]
+    assert february["days"] == 28
+    assert february["comparison"]["previous_days"] == 29
+    assert february["comparison"]["generation_yoy"] == "+93.10%"
+    assert february["comparison"]["daily_yoy"] == "+100.00%"
+    assert february["comparison"]["share_change_pp"] == "+0.00"
+
+
+def test_comparison_share_changes_are_percentage_points_and_not_rounded_inputs(
+    technology_path, tmp_path
+):
+    path = tmp_path / "rounding.duckdb"
+    shutil.copy2(technology_path, path)
+    with duckdb.connect(str(path)) as connection:
+        connection.execute(
+            "UPDATE generation SET energy_mwh = energy_mwh + "
+            "CASE WHEN technology_id = 'rare' THEN 1.221 ELSE -1.221 END "
+            "WHERE day = '2024-02-29' AND technology_id IN ('rare', 'gas')"
+        )
+        connection.execute(
+            "UPDATE generation SET energy_mwh = energy_mwh + "
+            "CASE WHEN technology_id = 'wind' THEN 0.102 ELSE -0.102 END "
+            "WHERE day BETWEEN '2025-02-01' AND '2025-02-28'"
+        )
+        months = dashboard.snapshot(connection, 2024, 2025)["selections"]["2025"]["rows"]
+    # Exact shares 8.6249% and 10.0051% differ by 1.3802 pp, not rounded 1.39 pp.
+    assert months[1]["comparison"]["previous_renewable_share"] == "8.62%"
+    assert months[1]["renewable_share"] == "10.01%"
+    assert months[1]["comparison"]["share_change_pp"] == "+1.38"
+    assert months[2]["comparison"]["share_change_pp"] == "+90.00"
+
+
+def test_comparison_evidence_excludes_unreferenced_retrievals(history_path, tmp_path):
+    path = tmp_path / "lineage.duckdb"
+    shutil.copy2(history_path, path)
+    with duckdb.connect(str(path)) as connection:
+        connection.execute(
+            "INSERT INTO ingestion_runs SELECT * REPLACE ('unused' AS retrieval_id) "
+            "FROM ingestion_runs WHERE start_date = '2025-02-01'"
+        )
+        connection.execute(
+            "INSERT INTO ingestion_runs SELECT * REPLACE ('replacement' AS retrieval_id) "
+            "FROM ingestion_runs WHERE retrieval_id = 'unused'"
+        )
+        for table in ("generation", "source_totals"):
+            connection.execute(
+                f"UPDATE {table} SET retrieval_id = 'replacement' WHERE day = '2025-02-01'"
+            )
+        result = dashboard.snapshot(connection, 2024, 2025)
+        february = result["selections"]["2025"]["rows"][1]["comparison"]
+        assert len(february["previous_evidence"]) == 1
+        assert len(february["current_evidence"]) == 2
+        assert "replacement" in {r[0] for r in february["current_evidence"]}
+        assert "unused" not in json.dumps(result)
+
+
+@pytest.mark.parametrize(
+    "wind,gas,energy_change,daily_change,share_change",
+    [(25, 475, "-51.72%", "-50.00%", "-5.00"), (100, 900, "-3.45%", "+0.00%", "+0.00")],
+)
+def test_comparison_handles_decreases_and_unchanged_daily_output(
+    history_path, tmp_path, wind, gas, energy_change, daily_change, share_change
+):
+    path = tmp_path / "changes.duckdb"
+    shutil.copy2(history_path, path)
+    with duckdb.connect(str(path)) as connection:
+        connection.execute(
+            "UPDATE generation SET energy_mwh = CASE WHEN technology_id = 'wind' "
+            "THEN ? ELSE ? END WHERE day BETWEEN '2025-02-01' AND '2025-02-28'",
+            [wind, gas],
+        )
+        connection.execute(
+            "UPDATE source_totals SET total_mwh = ? "
+            "WHERE day BETWEEN '2025-02-01' AND '2025-02-28'",
+            [wind + gas],
+        )
+        comparison = dashboard.snapshot(connection, 2024, 2025)["selections"]["2025"]["rows"][1][
+            "comparison"
+        ]
+    assert comparison["generation_yoy"] == energy_change
+    assert comparison["daily_yoy"] == daily_change
+    assert comparison["share_change_pp"] == share_change
 
 
 @pytest.fixture(scope="module")

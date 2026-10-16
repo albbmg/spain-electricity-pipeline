@@ -28,7 +28,9 @@ const { chromium } = require('playwright');
     const period = page.getByLabel('Period', { exact: true });
     const month = page.getByLabel('Month', { exact: true });
     const classification = page.getByLabel('Classification', { exact: true });
+    const comparisonMonth = page.getByLabel('Comparison month', { exact: true });
     let cases = 0;
+    let comparisonCases = 0;
     for (const [key, selection] of Object.entries(data.selections)) {
       await period.selectOption(key);
       assert.equal(await month.locator('option').count(), selection.months);
@@ -37,6 +39,30 @@ const { chromium } = require('playwright');
       assert.equal(await page.locator('#daily').textContent(), selection.daily_gwh);
       assert.equal(await page.locator('#evidence li').count(), selection.evidence.length);
       for (const row of selection.rows) {
+        await comparisonMonth.selectOption(row.month);
+        const comparison = row.comparison;
+        assert.equal(await page.locator('#comparison-result').isVisible(), comparison !== null);
+        if (comparison === null) {
+          assert.match(await page.locator('#comparison-status').textContent(), /No previous-year comparison/);
+          assert.equal(await page.locator('#comparison-rows tr').count(), 0);
+          assert.equal(await page.locator('#comparison-current-evidence li').count(), 0);
+        } else {
+          const actual = await page.locator('#comparison-rows tr').evaluateAll(rows =>
+            rows.map(row => Array.from(row.children, cell => cell.textContent)));
+          assert.deepEqual(actual, [
+            ['Calendar days', String(comparison.previous_days), String(row.days), '—'],
+            ['Generation (GWh)', comparison.previous_generation_gwh, row.generation_gwh, comparison.generation_yoy],
+            ['Daily average (GWh/day)', comparison.previous_daily_gwh, row.daily_gwh, comparison.daily_yoy],
+            ['Renewable share', comparison.previous_renewable_share, row.renewable_share, comparison.share_change_pp + ' pp'],
+          ]);
+          for (const [id, records] of [['prior', comparison.previous_evidence], ['current', comparison.current_evidence]]) {
+            const actualEvidence = await page.locator('#comparison-' + id + '-evidence li').allTextContents();
+            assert.deepEqual(actualEvidence, records.map(([identity, first, last, updated, retrieved, sha]) =>
+              'Window: ' + first + ' – ' + last + 'Retrieval: ' + identity + 'Provider last update: ' + updated +
+              'Retrieved at: ' + retrieved + 'SHA-256: ' + sha));
+          }
+        }
+        comparisonCases++;
         await month.selectOption(row.month);
         for (const kind of ['all', 'renewable', 'non-renewable']) {
           await classification.selectOption(kind);
@@ -50,6 +76,7 @@ const { chromium } = require('playwright');
           assert.equal(await page.locator('#technology-empty').isVisible(), visible.length === 0);
           assert.equal(await page.locator('#generation').textContent(), selection.generation_gwh);
           assert.equal(await page.locator('#evidence li').count(), selection.evidence.length);
+          assert.equal(await comparisonMonth.inputValue(), row.month);
           cases++;
         }
       }
@@ -99,9 +126,38 @@ const { chromium } = require('playwright');
     if (captures) {
       await page.screenshot({ path: join(captures, 'technology-mobile.png'), fullPage: true });
     }
+    await period.selectOption('2025');
+    await comparisonMonth.selectOption('2025-02');
+    assert.equal(await page.locator('#comparison-prior').textContent(), '2024-02');
+    assert.equal(await page.locator('#comparison-rows tr').nth(1).locator('td').last().textContent(), '+93.10%');
+    assert.equal(await page.locator('#comparison-rows tr').nth(2).locator('td').last().textContent(), '+100.00%');
+    await page.locator('#comparison-evidence-title').click();
+    assert(await page.locator('#comparison-prior-evidence').isVisible());
+    await comparisonMonth.focus();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Escape');
+    assert.equal(await comparisonMonth.inputValue(), '2025-03');
+    assert.equal(await page.locator('#comparison-current-evidence-title').textContent(), '2025-03');
+    await comparisonMonth.selectOption('2025-02');
+    await period.selectOption('all');
+    assert.equal(await comparisonMonth.inputValue(), '2025-02');
+    await period.selectOption('2024');
+    assert.equal(await comparisonMonth.inputValue(), '2024-12');
+    assert(!(await page.locator('#comparison-result').isVisible()));
+    await period.selectOption('2025');
+    await comparisonMonth.selectOption('2025-02');
+    assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    const comparisonScroll = page.getByRole('region', { name: 'Year-on-year comparison values, scroll horizontally on small screens' });
+    await comparisonScroll.evaluate(element => { element.scrollLeft = element.scrollWidth; });
+    assert(await comparisonScroll.evaluate(element => element.scrollLeft > 0));
+    if (captures) {
+      await page.locator('[aria-labelledby="comparison-title"]').screenshot({ path: join(captures, 'comparison-mobile.png') });
+      await page.setViewportSize({ width: 1280, height: 1000 });
+      await page.locator('[aria-labelledby="comparison-title"]').screenshot({ path: join(captures, 'comparison-desktop.png') });
+    }
     assert.deepEqual(errors, []);
     assert.deepEqual(requests, []);
-    console.log(JSON.stringify({ browser: browser.version(), filterCases: cases, offline: true,
+    console.log(JSON.stringify({ browser: browser.version(), filterCases: cases, comparisonCases, offline: true,
       desktopWidth: 1280, mobileWidth: 390, pageErrors: errors.length, httpRequests: requests.length }));
   } finally {
     await browser.close();
